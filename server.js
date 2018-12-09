@@ -85,9 +85,9 @@ app.post("/contributions", function(req, res) {
       });
     }
     else {
-      if (req.body.title.slice(-1) == "?") {
-        newContribution.title = "Ask HN: "+req.body.title;
-      }
+      // if (req.body.title.slice(-1) == "?") {
+      //   newContribution.title = "Ask HN: "+req.body.title;
+      // }
       newContribution.text = req.body.text;
       db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
         if (err) {
@@ -133,7 +133,7 @@ app.get("/contributions/new", function(req, res) {
  *    GET: find all contributions of type ask
  */
 app.get("/contributions/ask", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\?$" } }).toArray(function(err, docs) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\\?$" } }).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
     } else {
