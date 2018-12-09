@@ -85,6 +85,9 @@ app.post("/contributions", function(req, res) {
       });
     }
     else {
+      if (req.body.title.slice(-1) == "?") {
+        newContribution.title = "Ask HN: "+req.body.title;
+      }
       newContribution.text = req.body.text;
       db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
         if (err) {
@@ -114,10 +117,23 @@ app.get("/contributions/new", function(req, res) {
 });
 
 /*  "/contributions/threads"
- *    GET: find all contributions of type thread
+ *    GET: find all comments of the logged in user
  */
-app.get("/contributions/threads", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({ text: { $exists: true } }).toArray(function(err, docs) {
+// app.get("/contributions/threads", function(req, res) {
+//   db.collection(CONTRIBUTIONS_COLLECTION).find({ text: { $exists: true } }).toArray(function(err, docs) {
+//     if (err) {
+//       handleError(res, err.message, "Failed to get contributions.");
+//     } else {
+//       res.status(200).json(docs);  
+//     }
+//   });
+// });
+
+/*  "/contributions/ask"
+ *    GET: find all contributions of type ask
+ */
+app.get("/contributions/ask", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "?$" } }).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
     } else {
