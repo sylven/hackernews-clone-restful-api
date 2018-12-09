@@ -1,0 +1,25 @@
+<div class="row" ng-hide="contribution._id">
+  <div class="col-md-6">
+      <h2>Create new contribution</h2>
+  </div>
+</div>
+<div class="container">
+  <div>
+    <p>
+      <label>Title (required)</label> 
+      <input id="name" class="form-control" type="text" ng-model="contribution.title" required> 
+    </p>
+    <p>
+      <label>Text</label> 
+      <input id="name" class="form-control" type="text" ng-model="contribution.text" required> 
+    </p>
+    <p>
+      <label>Url</label> 
+      <input id="name" class="form-control" type="text" ng-model="contribution.url" required> 
+    </p>
+    <p>
+      <button style="margin-top:20px" class="btn btn-default" ng-click="saveContribution(contribution)">Save</button>
+      <button style="margin-top:20px" class="btn btn-default" ng-click="back()">Back</button>
+    </p>
+  </div>
+</div>
