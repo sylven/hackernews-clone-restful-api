@@ -55,7 +55,6 @@ function validateContributionData(contribution, callback) {
 
   // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
   if (contribution.url) {
-    newContribution.url = req.body.url;
     db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
       if (contributionFound) {
         callback(ERROR_CONTRIBUTION_URL_EXISTS);
