@@ -58,7 +58,7 @@ app.post("/contributions", function(req, res) {
   var newContribution = req.body;
   newContribution.createDate = new Date();
 
-  if (!req.body.title && !(req.body.text || req.body.url)) {
+  if (!req.body.title || !(req.body.text || req.body.url)) {
     handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
   }
 
