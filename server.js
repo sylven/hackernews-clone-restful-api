@@ -113,6 +113,19 @@ app.get("/contributions/new", function(req, res) {
   });
 });
 
+/*  "/contributions/threads"
+ *    GET: find all contributions of type thread
+ */
+app.get("/contributions/threads", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({ text: { $exists: true } }).toArray(function(err, docs) {
+    if (err) {
+      handleError(res, err.message, "Failed to get contributions.");
+    } else {
+      res.status(200).json(docs);  
+    }
+  });
+});
+
 /*  "/contributions/:id"
  *    GET: find contribution by id
  *    PUT: update contribution by id
