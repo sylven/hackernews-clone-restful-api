@@ -101,7 +101,7 @@ app.post("/contributions", function(req, res) {
         }
       });
     }
-  }
+  });
   
 });
 
