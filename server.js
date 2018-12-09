@@ -159,14 +159,22 @@ app.get("/contributions/:id", function(req, res) {
 });
 
 app.put("/contributions/:id", function(req, res) {
-  var updateDoc = req.body;
-  delete updateDoc._id;
-
-  db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
     if (err) {
-      handleError(res, err.message, "Failed to update contribution");
+      handleError(res, err.message, "Contribution doesn't exist");
     } else {
-      res.status(204).end();
+      var updateDoc = req.body;
+      delete updateDoc._id;
+      updateDoc.createDate = doc.createDate;
+      updateDoc.modificationDate = new Date();
+
+      db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Failed to update contribution");
+        } else {
+          res.status(204).end();
+        }
+      }); 
     }
   });
 });
