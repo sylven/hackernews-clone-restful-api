@@ -1,5 +1,5 @@
 {
-  "name": "Hacker News clone RESTful API",
+  "name": "hackernews-clone-restful-api",
   "version": "1.0.0",
   "description": "Hacker News clone RESTful API rewritten with Node.JS, using MongoDB.",
   "main": "server.js",
