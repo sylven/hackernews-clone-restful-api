@@ -36,12 +36,38 @@ mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
   });
 });
 
-// CONTACTS API ROUTES BELOW
+// CONTRIBUTIONS API ROUTES BELOW
 
 // Generic error handler used by all endpoints.
 function handleError(res, reason, message, code) {
   console.log("ERROR: " + reason);
   res.status(code || 500).json({"error": message});
+}
+
+function validateContributionData(contribution, callback) {
+  // Checks if the contribution has either an url or text
+  if (!contribution.title || (!contribution.url && !contribution.text)) {
+    callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
+  }
+  else if (contribution.url && contribution.text) {
+    callback(ERROR_CONTRIBUTION_URL_OR_TEXT);
+  }
+
+  // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
+  if (contribution.url) {
+    newContribution.url = req.body.url;
+    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
+      if (contributionFound) {
+        callback(ERROR_CONTRIBUTION_URL_EXISTS);
+      }
+      else {
+        callback(ERROR_CONTRIBUTION_OK);
+      }
+    });
+  }
+  else {
+    callback(ERROR_CONTRIBUTION_OK);
+  } 
 }
 
 /*  "/contributions"
@@ -159,32 +185,6 @@ app.get("/contributions/:id", function(req, res) {
     }
   });
 });
-
-function validateContributionData(contribution, callback) {
-  // Checks if the contribution has either an url or text
-  if (!contribution.title || (!contribution.url || !contribution.text)) {
-    callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
-  }
-  else if (contribution.url && contribution.text) {
-    callback(ERROR_CONTRIBUTION_URL_OR_TEXT);
-  }
-
-  // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
-  if (contribution.url) {
-    newContribution.url = req.body.url;
-    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
-      if (contributionFound) {
-        callback(ERROR_CONTRIBUTION_URL_EXISTS);
-      }
-      else {
-        callback(ERROR_CONTRIBUTION_OK);
-      }
-    });
-  }
-  else {
-    callback(ERROR_CONTRIBUTION_OK);
-  } 
-}
 
 app.put("/contributions/:id", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
