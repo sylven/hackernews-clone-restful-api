@@ -193,13 +193,13 @@ app.put("/contributions/:id", function(req, res) {
       handleError(res, err.message, "Contribution doesn't exist");
     } else {
       validateContributionData(req.body, function(response) {
-        if (ERROR_CONTRIBUTION_MISSING_PARAMS) {
+        if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
           handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
         }
-        else if (ERROR_CONTRIBUTION_URL_OR_TEXT) {
+        else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
           handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
         }
-        else if (ERROR_CONTRIBUTION_URL_EXISTS) {
+        else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
           db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
             if (err2) {
               handleError(res, err.message, "Error finding the already existing url contribution");
