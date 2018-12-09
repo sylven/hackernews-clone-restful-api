@@ -6,6 +6,11 @@ var ObjectID = mongodb.ObjectID;
 
 var CONTRIBUTIONS_COLLECTION = "contributions";
 
+var ERROR_CONTRIBUTION_OK = 0;
+var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
+var ERROR_CONTRIBUTION_URL_OR_TEXT = -2;
+var ERROR_CONTRIBUTION_URL_EXISTS = -3;
+
 var app = express();
 app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.json());
@@ -58,37 +63,35 @@ app.post("/contributions", function(req, res) {
   var newContribution = {};
   newContribution.createDate = new Date();
 
-  if (!req.body.title || !(req.body.text || req.body.url)) {
-    handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
-  }
-  else if (req.body.text && req.body.url) {
-    handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
-  }
-  else {
-    newContribution.title = req.body.title;
-    if (req.body.url) {
-      newContribution.url = req.body.url;
-      db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, contribution) { 
-        if (contribution) {
-          handleError(res, "Contribution already exists", "This url has already been submited", 400);
-        }
-        else {
-          db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-            if (err) {
-              handleError(res, err.message, "Failed to create new contribution.");
-            }
-            else {
-              res.status(201).json(doc.ops[0]);
-            }
-          });
+  validateContributionData(req.body, function(response) {
+    if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
+      handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
+    }
+    else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
+      handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
+    }
+    else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
+      db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Error finding the already existing url contribution");
+        } else {
+          var errorResponse = {};
+          errorResponse.alreadyExisitingContributionID = doc._id;
+          res.status(400).json(errorResponse); 
         }
       });
     }
-    else {
-      // if (req.body.title.slice(-1) == "?") {
-      //   newContribution.title = "Ask HN: "+req.body.title;
-      // }
-      newContribution.text = req.body.text;
+    else if (response == ERROR_CONTRIBUTION_OK) {
+      newContribution.title = req.body.title;
+      if (req.body.url) {
+        newContribution.url = req.body.url;
+      }
+      else {
+        // if (req.body.title.slice(-1) == "?") {
+        //   newContribution.title = "Ask HN: "+req.body.title;
+        // }
+        newContribution.text = req.body.text;
+      }
       db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
         if (err) {
           handleError(res, err.message, "Failed to create new contribution.");
@@ -98,7 +101,6 @@ app.post("/contributions", function(req, res) {
         }
       });
     }
-    
   }
   
 });
@@ -158,14 +160,9 @@ app.get("/contributions/:id", function(req, res) {
   });
 });
 
-var ERROR_CONTRIBUTION_OK = 0;
-var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
-var ERROR_CONTRIBUTION_URL_OR_TEXT = -2;
-var ERROR_CONTRIBUTION_URL_EXISTS = -3;
-
 function validateContributionData(contribution, callback) {
   // Checks if the contribution has either an url or text
-  if (!contribution.title || !contribution.url || !contribution.text) {
+  if (!contribution.title || (!contribution.url || !contribution.text)) {
     callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
   }
   else if (contribution.url && contribution.text) {
