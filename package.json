@@ -1,0 +1,30 @@
+{
+  "name": "Hacker News clone RESTful API",
+  "version": "1.0.0",
+  "description": "Hacker News clone RESTful API rewritten with Node.JS, using MongoDB.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sylven/hackernews-clone-restful-api.git"
+  },
+  "keywords": [
+    "MEAN",
+    "Express",
+    "Angular"
+  ],
+  "author": "Silviu, Gorka, Aleix, Miquel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sylven/hackernews-clone-restful-api/issues"
+  },
+  "homepage": "https://github.com/sylven/hackernews-clone-restful-api",
+  "dependencies": {
+    "body-parser": "^1.13.3",
+    "express": "^4.13.3",
+    "mongodb": "^2.0.43"
+  }
+}
