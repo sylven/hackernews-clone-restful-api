@@ -4,7 +4,7 @@ var bodyParser = require("body-parser");
 var mongodb = require("mongodb");
 var ObjectID = mongodb.ObjectID;
 
-var CONTACTS_COLLECTION = "contacts";
+var CONTRIBUTIONS_COLLECTION = "contributions";
 
 var app = express();
 app.use(express.static(__dirname + "/public"));
@@ -38,3 +38,76 @@ function handleError(res, reason, message, code) {
   console.log("ERROR: " + reason);
   res.status(code || 500).json({"error": message});
 }
+
+/*  "/contributions"
+ *    GET: finds all contributions
+ *    POST: creates a new contribution
+ */
+
+app.get("/contributions", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({}).toArray(function(err, docs) {
+    if (err) {
+      handleError(res, err.message, "Failed to get contributions.");
+    } else {
+      res.status(200).json(docs);  
+    }
+  });
+});
+
+app.post("/contributions", function(req, res) {
+  var newContribution = req.body;
+  newContribution.createDate = new Date();
+
+  if (!req.body.title && !(req.body.text || req.body.url)) {
+    handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
+  }
+
+  // TODO: Handle already existing url
+
+  db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to create new contribution.");
+    } else {
+      res.status(201).json(doc.ops[0]);
+    }
+  });
+});
+
+/*  "/contributions/:id"
+ *    GET: find contribution by id
+ *    PUT: update contribution by id
+ *    DELETE: deletes contribution by id
+ */
+
+app.get("/contributions/:id", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to get contribution");
+    } else {
+      res.status(200).json(doc);  
+    }
+  });
+});
+
+app.put("/contributions/:id", function(req, res) {
+  var updateDoc = req.body;
+  delete updateDoc._id;
+
+  db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+    if (err) {
+      handleError(res, err.message, "Failed to update contribution");
+    } else {
+      res.status(204).end();
+    }
+  });
+});
+
+app.delete("/contributions/:id", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+    if (err) {
+      handleError(res, err.message, "Failed to delete contribution");
+    } else {
+      res.status(204).end();
+    }
+  });
+});
