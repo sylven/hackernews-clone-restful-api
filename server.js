@@ -55,7 +55,7 @@ app.get("/contributions", function(req, res) {
 });
 
 app.post("/contributions", function(req, res) {
-  var newContribution;
+  var newContribution = {};
   newContribution.createDate = new Date();
 
   if (!req.body.title || !(req.body.text || req.body.url)) {
