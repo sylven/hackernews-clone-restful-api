@@ -55,7 +55,7 @@ app.get("/contributions", function(req, res) {
 });
 
 app.post("/contributions", function(req, res) {
-  var newContribution = req.body;
+  var newContribution;
   newContribution.createDate = new Date();
 
   if (!req.body.title || !(req.body.text || req.body.url)) {
@@ -65,7 +65,9 @@ app.post("/contributions", function(req, res) {
     handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
   }
   else {
+    newContribution.title = req.body.title;
     if (req.body.url) {
+      newContribution.url = req.body.url;
       db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, contribution) { 
         if (contribution) {
           handleError(res, "Contribution already exists", "This url has already been submited", 400);
@@ -83,6 +85,7 @@ app.post("/contributions", function(req, res) {
       });
     }
     else {
+      newContribution.text = req.body.text;
       db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
         if (err) {
           handleError(res, err.message, "Failed to create new contribution.");
