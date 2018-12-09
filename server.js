@@ -90,10 +90,10 @@ app.post("/contributions", function(req, res) {
 
   validateContributionData(req.body, function(response) {
     if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
-      handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
+      handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
     }
     else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
-      handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
+      handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
     }
     else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
       db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, doc) {
@@ -193,10 +193,10 @@ app.put("/contributions/:id", function(req, res) {
     } else {
       validateContributionData(req.body, function(response) {
         if (ERROR_CONTRIBUTION_MISSING_PARAMS) {
-          handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
+          handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
         }
         else if (ERROR_CONTRIBUTION_URL_OR_TEXT) {
-          handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
+          handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
         }
         else if (ERROR_CONTRIBUTION_URL_EXISTS) {
           db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
