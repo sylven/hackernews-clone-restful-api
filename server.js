@@ -104,7 +104,7 @@ app.post("/contributions", function(req, res) {
  *    GET: find all contributions ordered by date
  */
 app.get("/contributions/new", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['datefield', 'desc']]}).toArray(function(err, docs) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['createDate', 'desc']]}).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
     } else {
