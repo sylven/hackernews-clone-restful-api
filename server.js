@@ -102,7 +102,7 @@ app.post("/contributions", function(req, res) {
         } else {
           var errorResponse = {};
           errorResponse.error = "A contribution with this url already exists";
-          errorResponse.alreadyExisitingContributionID = doc._id;
+          errorResponse.contributionId = doc._id;
           res.status(302).json(errorResponse); 
         }
       });
@@ -192,39 +192,38 @@ app.put("/contributions/:id", function(req, res) {
       handleError(res, err.message, "Contribution doesn't exist");
     } else {
       validateContributionData(req.body, function(response) {
-        if (response == ERROR_CONTRIBUTION_OK) {
-          var updateDoc = req.body;
-          delete updateDoc._id;
-          updateDoc.createDate = doc.createDate;
-          updateDoc.modificationDate = new Date();
-
-          db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
-            if (err) {
-              handleError(res, err.message, "Failed to update contribution");
-            } else {
-              res.status(204).end();
-            }
-          }); 
-        }
-        else if (ERROR_CONTRIBUTION_MISSING_PARAMS) {
+        if (ERROR_CONTRIBUTION_MISSING_PARAMS) {
           handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
         }
         else if (ERROR_CONTRIBUTION_URL_OR_TEXT) {
           handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
         }
         else if (ERROR_CONTRIBUTION_URL_EXISTS) {
-          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, doc) {
-            if (err) {
+          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+            if (err2) {
               handleError(res, err.message, "Error finding the already existing url contribution");
             } else {
               var errorResponse = {};
               errorResponse.error = "A contribution with this url already exists";
-              errorResponse.alreadyExisitingContributionID = doc._id;
+              errorResponse.contributionId = doc2._id;
               res.status(302).json(errorResponse);
             }
           });
         }
-        
+        else if (response == ERROR_CONTRIBUTION_OK) {
+          var updateDoc = req.body;
+          delete updateDoc._id;
+          updateDoc.createDate = doc.createDate;
+          updateDoc.modificationDate = new Date();
+
+          db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err3, doc3) {
+            if (err3) {
+              handleError(res, err3.message, "Failed to update contribution");
+            } else {
+              res.status(204).end();
+            }
+          }); 
+        }
       });
     }
   });
