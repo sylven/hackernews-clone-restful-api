@@ -101,8 +101,9 @@ app.post("/contributions", function(req, res) {
           handleError(res, err.message, "Error finding the already existing url contribution");
         } else {
           var errorResponse = {};
+          errorResponse.error = "A contribution with this url already exists";
           errorResponse.alreadyExisitingContributionID = doc._id;
-          res.status(400).json(errorResponse); 
+          res.status(302).json(errorResponse); 
         }
       });
     }
@@ -217,8 +218,9 @@ app.put("/contributions/:id", function(req, res) {
               handleError(res, err.message, "Error finding the already existing url contribution");
             } else {
               var errorResponse = {};
+              errorResponse.error = "A contribution with this url already exists";
               errorResponse.alreadyExisitingContributionID = doc._id;
-              res.status(400).json(errorResponse); 
+              res.status(302).json(errorResponse);
             }
           });
         }
