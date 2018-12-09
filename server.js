@@ -61,8 +61,15 @@ app.post("/contributions", function(req, res) {
   if (!req.body.title || !(req.body.text || req.body.url)) {
     handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
   }
+  else if (req.body.text && req.body.url) {
+    handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
+  }
 
-  // TODO: Handle already existing url
+  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, contribution) { 
+    if (contribution) {
+      handleError(res, "Contribution already exists", "This url has already been submited", 400);
+    }
+  });
 
   db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
     if (err) {
