@@ -64,20 +64,28 @@ app.post("/contributions", function(req, res) {
   else if (req.body.text && req.body.url) {
     handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
   }
+  else {
+    var error = false;
+    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, contribution) { 
+      if (contribution) {
+        handleError(res, "Contribution already exists", "This url has already been submited", 400);
+        error = true;
+      }
+    });
 
-  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, contribution) { 
-    if (contribution) {
-      handleError(res, "Contribution already exists", "This url has already been submited", 400);
+    if (!error) {
+      db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Failed to create new contribution.");
+        }
+        else {
+          res.status(201).json(doc.ops[0]);
+        }
+      });
     }
-  });
-
-  db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-    if (err) {
-      handleError(res, err.message, "Failed to create new contribution.");
-    } else {
-      res.status(201).json(doc.ops[0]);
-    }
-  });
+    
+  }
+  
 });
 
 /*  "/contributions/:id"
