@@ -52,21 +52,22 @@ function validateContributionData(contribution, callback) {
   else if (contribution.url && contribution.text) {
     callback(ERROR_CONTRIBUTION_URL_OR_TEXT);
   }
-
-  // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
-  if (contribution.url) {
-    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
-      if (contributionFound) {
-        callback(ERROR_CONTRIBUTION_URL_EXISTS);
-      }
-      else {
-        callback(ERROR_CONTRIBUTION_OK);
-      }
-    });
-  }
   else {
-    callback(ERROR_CONTRIBUTION_OK);
-  } 
+    // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
+    if (contribution.url) {
+      db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
+        if (contributionFound) {
+          callback(ERROR_CONTRIBUTION_URL_EXISTS);
+        }
+        else {
+          callback(ERROR_CONTRIBUTION_OK);
+        }
+      });
+    }
+    else {
+      callback(ERROR_CONTRIBUTION_OK);
+    } 
+  }
 }
 
 /*  "/contributions"
@@ -103,7 +104,7 @@ app.post("/contributions", function(req, res) {
           var errorResponse = {};
           errorResponse.error = "A contribution with this url already exists";
           errorResponse.contributionId = doc._id;
-          res.status(302).json(errorResponse); 
+          res.status(302).json(errorResponse);
         }
       });
     }
