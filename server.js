@@ -100,6 +100,19 @@ app.post("/contributions", function(req, res) {
   
 });
 
+/*  "/contributions/new"
+ *    GET: find all contributions ordered by date
+ */
+app.get("/contributions/new", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['datefield', 'desc']]}).toArray(function(err, docs) {
+    if (err) {
+      handleError(res, err.message, "Failed to get contributions.");
+    } else {
+      res.status(200).json(docs);  
+    }
+  });
+});
+
 /*  "/contributions/:id"
  *    GET: find contribution by id
  *    PUT: update contribution by id
