@@ -158,23 +158,76 @@ app.get("/contributions/:id", function(req, res) {
   });
 });
 
+var ERROR_CONTRIBUTION_OK = 0;
+var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
+var ERROR_CONTRIBUTION_URL_OR_TEXT = -2;
+var ERROR_CONTRIBUTION_URL_EXISTS = -3;
+
+function validateContributionData(contribution, callback) {
+  // Checks if the contribution has either an url or text
+  if (!contribution.title || !contribution.url || !contribution.text) {
+    callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
+  }
+  else if (contribution.url && contribution.text) {
+    callback(ERROR_CONTRIBUTION_URL_OR_TEXT);
+  }
+
+  // If it has an url, it checks if the url already exists and returns the id of the contribution containing it
+  if (contribution.url) {
+    newContribution.url = req.body.url;
+    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
+      if (contributionFound) {
+        callback(ERROR_CONTRIBUTION_URL_EXISTS);
+      }
+      else {
+        callback(ERROR_CONTRIBUTION_OK);
+      }
+    });
+  }
+  else {
+    callback(ERROR_CONTRIBUTION_OK);
+  } 
+}
+
 app.put("/contributions/:id", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
     if (err) {
       handleError(res, err.message, "Contribution doesn't exist");
     } else {
-      var updateDoc = req.body;
-      delete updateDoc._id;
-      updateDoc.createDate = doc.createDate;
-      updateDoc.modificationDate = new Date();
+      validateContributionData(req.body, function(response) {
+        if (response == ERROR_CONTRIBUTION_OK) {
+          var updateDoc = req.body;
+          delete updateDoc._id;
+          updateDoc.createDate = doc.createDate;
+          updateDoc.modificationDate = new Date();
 
-      db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
-        if (err) {
-          handleError(res, err.message, "Failed to update contribution");
-        } else {
-          res.status(204).end();
+          db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Failed to update contribution");
+            } else {
+              res.status(204).end();
+            }
+          }); 
         }
-      }); 
+        else if (ERROR_CONTRIBUTION_MISSING_PARAMS) {
+          handleError(res, "Invalid contribution input", "Must provide all parameters.", 400);
+        }
+        else if (ERROR_CONTRIBUTION_URL_OR_TEXT) {
+          handleError(res, "Invalid contribution input", "You can only provide a text or url", 400);
+        }
+        else if (ERROR_CONTRIBUTION_URL_EXISTS) {
+          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Error finding the already existing url contribution");
+            } else {
+              var errorResponse = {};
+              errorResponse.alreadyExisitingContributionID = doc._id;
+              res.status(400).json(errorResponse); 
+            }
+          });
+        }
+        
+      });
     }
   });
 });
