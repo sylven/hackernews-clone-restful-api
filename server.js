@@ -133,7 +133,7 @@ app.get("/contributions/new", function(req, res) {
  *    GET: find all contributions of type ask
  */
 app.get("/contributions/ask", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "?$" } }).toArray(function(err, docs) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\?$" } }).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
     } else {
