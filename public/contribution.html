@@ -1,28 +1,32 @@
-<div class = "row">
-  <div class="col-md-6">
-    <h2>
-      {{ contribution.title }}
-    </h2>
+<div ng-include="'nav.html'"></div>
+<div class="container">
+
+  <div class = "row">
+    <div class="col-md-6">
+      <h2>
+        {{ contribution.title }}
+      </h2>
+    </div>
+    <div class="col-md-3">
+    </div>
+    <div class="col-md-2">
+      <a href="#/"><button style="margin-top:20px" class="btn btn-default" ng-click="deleteContribution(contribution._id)">Delete</button></a>
+    </div>
+    <div class="col-md-1">
+    </div>
   </div>
-  <div class="col-md-3">
+  <div ng-hide="editMode" class="container">
+    <div>
+      <p ng-if="contribution.title">title: {{ contribution.title }}</p>
+      <p ng-if="contribution.text">text: {{ contribution.text }} </p>
+      <p ng-if="contribution.url">url: {{ contribution.url }} </p>
+      <p>
+        <button style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">Edit</button>
+        <a style="margin-top:20px" class="btn btn-default" href="#/">Back</a>
+      </p>
+    </div>
   </div>
-  <div class="col-md-2">
-    <a href="#/"><button style="margin-top:20px" class="btn btn-default" ng-click="deleteContribution(contribution._id)">Delete</button></a>
+  <!-- Contribution form -->
+  <div ng-include="contributionFormUrl">
   </div>
-  <div class="col-md-1">
-  </div>
-</div>
-<div ng-hide="editMode" class="container">
-  <div>
-    <p ng-if="contribution.title">title: {{ contribution.title }}</p>
-    <p ng-if="contribution.text">text: {{ contribution.text }} </p>
-    <p ng-if="contribution.url">url: {{ contribution.url }} </p>
-    <p>
-      <button style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">Edit</button>
-      <a style="margin-top:20px" class="btn btn-default" href="#/">Back</a>
-    </p>
-  </div>
-</div>
-<!-- Contribution form -->
-<div ng-include="contributionFormUrl">
 </div>

@@ -1,8 +1,8 @@
-angular.module("contributionsApp", ['ngRoute'])
+angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
     .config(function($routeProvider) {
         $routeProvider
             .when("/", {
-                templateUrl: "list.html",
+                templateUrl: "home.html",
                 controller: "ListController",
                 resolve: {
                     contributions: function(Contributions) {
@@ -24,7 +24,7 @@ angular.module("contributionsApp", ['ngRoute'])
     })
     .service("Contributions", function($http) {
         this.getContributions = function() {
-            return $http.get("/contributions").
+            return $http.get("/api/contributions").
                 then(function(response) {
                     return response;
                 }, function(response) {
@@ -32,7 +32,7 @@ angular.module("contributionsApp", ['ngRoute'])
                 });
         }
         this.createContribution = function(contribution) {
-            return $http.post("/contributions", contribution).
+            return $http.post("/api/contributions", contribution).
                 then(function(response) {
                     return response;
                 }, function(response) {
@@ -40,7 +40,7 @@ angular.module("contributionsApp", ['ngRoute'])
                 });
         }
         this.getContribution = function(contributionId) {
-            var url = "/contributions/" + contributionId;
+            var url = "/api/contributions/" + contributionId;
             return $http.get(url).
                 then(function(response) {
                     return response;
@@ -49,7 +49,7 @@ angular.module("contributionsApp", ['ngRoute'])
                 });
         }
         this.editContribution = function(contribution) {
-            var url = "/contributions/" + contribution._id;
+            var url = "/api/contributions/" + contribution._id;
             console.log(contribution._id);
             return $http.put(url, contribution).
                 then(function(response) {
@@ -60,7 +60,7 @@ angular.module("contributionsApp", ['ngRoute'])
                 });
         }
         this.deleteContribution = function(contributionId) {
-            var url = "/contributions/" + contributionId;
+            var url = "/api/contributions/" + contributionId;
             return $http.delete(url).
                 then(function(response) {
                     return response;
@@ -70,8 +70,31 @@ angular.module("contributionsApp", ['ngRoute'])
                 });
         }
     })
-    .controller("ListController", function(contributions, $scope) {
+    .service("Users", function ($http) {
+        this.getLoginUrl = function() {
+            return $http.get("/api/users/login-url").
+                then(function(response) {
+                    return response;
+            }, function (response) {
+                alert("Error getting login url");
+            })
+        }
+    })
+    .controller("ListController", function($scope, $cookies, $location, contributions, Users) {
         $scope.contributions = contributions.data;
+        $scope.authToken = $cookies.get('access_token');
+
+        //$cookies.put('myFavorite', 'oatmeal');
+        Users.getLoginUrl().then(function(doc) {
+            $scope.loginUrl = doc.data.url;
+        }, function(response) {
+            alert(response);
+        });
+
+        $scope.logout = function() {
+            $cookies.remove('access_token');
+            $location.path("#/");
+        }
     })
     .controller("NewContributionController", function($scope, $location, Contributions) {
         $scope.back = function() {
@@ -80,7 +103,7 @@ angular.module("contributionsApp", ['ngRoute'])
 
         $scope.saveContribution = function(contribution) {
             Contributions.createContribution(contribution).then(function(doc) {
-                var contributionUrl = "/contribution/" + doc.data._id;
+                var contributionUrl = "/api/contribution/" + doc.data._id;
                 $location.path(contributionUrl);
             }, function(response) {
                 alert(response);

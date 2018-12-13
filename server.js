@@ -3,8 +3,110 @@ var path = require("path");
 var bodyParser = require("body-parser");
 var mongodb = require("mongodb");
 var ObjectID = mongodb.ObjectID;
+var cookieParser = require('cookie-parser');
+
+const {google} = require('googleapis');
+
+/*******************/
+/** CONFIGURATION **/
+/*******************/
+var googleConfig;
+if (process.env.ENVIRONMENT == 'production') {
+  googleConfig = {
+    clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
+    clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
+    redirect: 'https://hackernews-clone-restful-api.herokuapp.com/auth/google/callback' // this must match your google api settings
+  };
+}
+else {
+  googleConfig = {
+    clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
+    clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
+    redirect: 'https://localhost:8080/auth/google/callback' // this must match your google api settings
+  };
+}
+
+const defaultScope = [
+  'https://www.googleapis.com/auth/plus.me',
+  'https://www.googleapis.com/auth/userinfo.email',
+];
+
+var googleutils = {
+  /*************/
+  /** HELPERS **/
+  /*************/
+
+  createConnection: function() {
+    return new google.auth.OAuth2(
+        googleConfig.clientId,
+        googleConfig.clientSecret,
+        googleConfig.redirect
+    );
+  },
+
+  getConnectionUrl: function(auth) {
+    return auth.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: defaultScope
+    });
+  },
+
+  getGooglePlusApi: function(auth) {
+    return google.plus({ version: 'v1', auth });
+  },
+
+  /**********/
+  /** MAIN **/
+  /**********/
+
+  /**
+   * Part 1: Create a Google URL and send to the client to log in the user.
+   */
+  urlGoogle: function() {
+    const auth = this.createConnection();
+    const url = this.getConnectionUrl(auth);
+    return url;
+  },
+
+  /**
+   * Part 2: Take the "code" parameter which Google gives us once when the user logs in, then get the user's email and id.
+   */
+  // getGoogleAccountFromCode: function (code) {
+  //   const data = await auth.getToken(code);
+  //   const tokens = data.tokens;
+  //   const auth = createConnection();
+  //   auth.setCredentials(tokens);
+  //   const plus = getGooglePlusApi(auth);
+  //   const me = await plus.people.get({userId: 'me'});
+  //   const userGoogleId = me.data.id;
+  //   const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+  //   return {
+  //     id: userGoogleId,
+  //     email: userGoogleEmail,
+  //     tokens: tokens,
+  //   };
+  // }
+  getGoogleAccountFromCode: async function (code) {
+    const auth = await this.createConnection();
+    const data = await auth.getToken(code);
+    const tokens = data.tokens;
+    auth.setCredentials(tokens);
+    const plus = this.getGooglePlusApi(auth);
+    const me = await plus.people.get({userId: 'me'});
+    const userGoogleId = me.data.id;
+    const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+    return {
+      id: userGoogleId,
+      email: userGoogleEmail,
+      tokens: tokens,
+    };
+  }
+};
+
 
 var CONTRIBUTIONS_COLLECTION = "contributions";
+var USERS_COLLECTION = "users";
 
 var ERROR_CONTRIBUTION_OK = 0;
 var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
@@ -14,6 +116,7 @@ var ERROR_CONTRIBUTION_URL_EXISTS = -3;
 var app = express();
 app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 // Create a database variable outside of the database connection callback to reuse the connection pool in your app.
 var db;
@@ -23,7 +126,14 @@ var db;
 // Use environment variable to get database url (doesn't work on local environment)
 //mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
 
-mongodb.MongoClient.connect("mongodb://heroku_57rvbrlm:nhct4o3svduopt5nsc6dhohe5s@ds127604.mlab.com:27604/heroku_57rvbrlm", function (err, database) {
+var mongodbURI;
+if (process.env.ENVIRONMENT == 'production') {
+  mongodbURI = process.env.MONGODB_URI;
+}
+else {
+  mongodbURI = "mongodb://heroku_57rvbrlm:nhct4o3svduopt5nsc6dhohe5s@ds127604.mlab.com:27604/heroku_57rvbrlm";
+}
+mongodb.MongoClient.connect(mongodbURI, function (err, database) {
   if (err) {
     console.log(err);
     process.exit(1);
@@ -50,7 +160,7 @@ function handleError(res, reason, message, code) {
 
 function validateContributionData(contribution, callback) {
   // Checks if the contribution has either an url or text
-  if (!contribution.title || (!contribution.url && !contribution.text)) {
+  if (!contribution.title || (!contribution.url && !contribution.text) || !contribution.author_id) {
     callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
   }
   else if (contribution.url && contribution.text) {
@@ -79,7 +189,7 @@ function validateContributionData(contribution, callback) {
  *    POST: creates a new contribution
  */
 
-app.get("/contributions", function(req, res) {
+app.get("/api/contributions", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).find({}).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
@@ -89,7 +199,7 @@ app.get("/contributions", function(req, res) {
   });
 });
 
-app.post("/contributions", function(req, res) {
+app.post("/api/contributions", function(req, res) {
   var newContribution = {};
   newContribution.createDate = new Date();
 
@@ -139,7 +249,7 @@ app.post("/contributions", function(req, res) {
 /*  "/contributions/new"
  *    GET: find all contributions ordered by date
  */
-app.get("/contributions/new", function(req, res) {
+app.get("/api/contributions/new", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['createDate', 'desc']]}).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
@@ -152,7 +262,7 @@ app.get("/contributions/new", function(req, res) {
 /*  "/contributions/threads"
  *    GET: find all comments of the logged in user
  */
-// app.get("/contributions/threads", function(req, res) {
+// app.get("/api/contributions/threads", function(req, res) {
 //   db.collection(CONTRIBUTIONS_COLLECTION).find({ text: { $exists: true } }).toArray(function(err, docs) {
 //     if (err) {
 //       handleError(res, err.message, "Failed to get contributions.");
@@ -165,7 +275,7 @@ app.get("/contributions/new", function(req, res) {
 /*  "/contributions/ask"
  *    GET: find all contributions of type ask
  */
-app.get("/contributions/ask", function(req, res) {
+app.get("/api/contributions/ask", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\\?$" } }).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
@@ -181,7 +291,7 @@ app.get("/contributions/ask", function(req, res) {
  *    DELETE: deletes contribution by id
  */
 
-app.get("/contributions/:id", function(req, res) {
+app.get("/api/contributions/:id", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
     if (err) {
       handleError(res, err.message, "Failed to get contribution");
@@ -191,7 +301,7 @@ app.get("/contributions/:id", function(req, res) {
   });
 });
 
-app.put("/contributions/:id", function(req, res) {
+app.put("/api/contributions/:id", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
     if (err) {
       handleError(res, err.message, "Contribution doesn't exist");
@@ -234,7 +344,7 @@ app.put("/contributions/:id", function(req, res) {
   });
 });
 
-app.delete("/contributions/:id", function(req, res) {
+app.delete("/api/contributions/:id", function(req, res) {
   db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
     if (err) {
       handleError(res, err.message, "Failed to delete contribution");
@@ -242,4 +352,58 @@ app.delete("/contributions/:id", function(req, res) {
       res.status(204).end();
     }
   });
+});
+
+app.get("/api/users/login-url", function(req, res) {
+  var json = {};
+  json.url = googleutils.urlGoogle();
+  res.status(200).json(json);
+});
+// app.get("/api/geturl2", function(req, res) {
+//   var object = googleutils.getGoogleAccountFromCode(req.query.code).catch(console.error);
+//   console.log(object);
+//   res.status(200).json(object);
+// });
+app.get("/auth/google/callback", function (req, res) {
+  googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
+    //res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
+    res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+    // Check if user already exists
+    db.collection(USERS_COLLECTION).findOne({ email: response.email }, function(err, userFound) {
+      if (userFound) {
+        db.collection(USERS_COLLECTION).updateOne({email: response.email}, response, function(err3, doc3) {
+          if (err3) {
+            handleError(res, err3.message, "Failed to update user");
+          } else {
+            //res.status(201).json(response);
+
+            // Redirect to base url
+            var newPath = req.originalUrl.split('auth')[0]
+            res.redirect(newPath);
+          }
+        });
+        //res.status(200).end();
+      }
+      else {
+        db.collection(USERS_COLLECTION).insertOne(response, function(err, doc) {
+          if (err) {
+            handleError(res, err.message, "Failed to create new user.");
+          }
+          else {
+            //res.status(201).json(doc.ops[0]);
+
+            // Redirect to base url
+            var newPath = req.originalUrl.split('auth')[0]
+            res.redirect(newPath);
+          }
+        });
+      }
+    });
+      // Then update his token or whatever
+
+      // Else create user
+
+    //console.log(response);
+    //res.status(200).json(response);
+  }).catch(console.error);
 });

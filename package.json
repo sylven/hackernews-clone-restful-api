@@ -25,6 +25,8 @@
   "dependencies": {
     "body-parser": "^1.13.3",
     "express": "^4.13.3",
-    "mongodb": "^2.0.43"
+    "mongodb": "^2.0.43",
+    "googleapis": "^36.0.0",
+    "cookie-parser": "^1.4.3"
   }
 }
