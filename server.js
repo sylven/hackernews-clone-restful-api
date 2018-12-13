@@ -15,7 +15,7 @@ if (process.env.ENVIRONMENT == 'production') {
   googleConfig = {
     clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
     clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
-    redirect: 'https://hackernews-clone-restful-api.herokuapp.com/auth/google/callback' // this must match your google api settings
+    redirect: 'https://hackernews-clone-restful-api.herokuapp.com/api/auth/google/callback' // this must match your google api settings
   };
 }
 else {
