@@ -22,7 +22,7 @@ else {
   googleConfig = {
     clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
     clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
-    redirect: 'https://localhost:8080/auth/google/callback' // this must match your google api settings
+    redirect: 'https://localhost:8080/api/auth/google/callback' // this must match your google api settings
   };
 }
 
@@ -364,7 +364,7 @@ app.get("/api/users/login-url", function(req, res) {
 //   console.log(object);
 //   res.status(200).json(object);
 // });
-app.get("/auth/google/callback", function (req, res) {
+app.get("/api/auth/google/callback", function (req, res) {
   googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
     //res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
     res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
