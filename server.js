@@ -378,7 +378,7 @@ app.get("/api/auth/google/callback", function (req, res) {
             //res.status(201).json(response);
 
             // Redirect to base url
-            var newPath = req.originalUrl.split('auth')[0]
+            var newPath = req.originalUrl.split('api')[0]
             res.redirect(newPath);
           }
         });
@@ -393,7 +393,7 @@ app.get("/api/auth/google/callback", function (req, res) {
             //res.status(201).json(doc.ops[0]);
 
             // Redirect to base url
-            var newPath = req.originalUrl.split('auth')[0]
+            var newPath = req.originalUrl.split('api')[0]
             res.redirect(newPath);
           }
         });
