@@ -32,4 +32,4 @@ https://hackernews-clone-restful-api.herokuapp.com/
 ## Deploy to Heroku
 1. heroku login
 2. heroku git:remote -a hackernews-clone-restful-api
-3. git push heroku master
+3. git push heroku develop:master

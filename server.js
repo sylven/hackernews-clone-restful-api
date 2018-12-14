@@ -22,13 +22,14 @@ else {
   googleConfig = {
     clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
     clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
-    redirect: 'https://localhost:8080/api/auth/google/callback' // this must match your google api settings
+    redirect: 'http://localhost:8080/api/auth/google/callback' // this must match your google api settings
   };
 }
 
 const defaultScope = [
   'https://www.googleapis.com/auth/plus.me',
   'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
 var googleutils = {
@@ -96,10 +97,15 @@ var googleutils = {
     const me = await plus.people.get({userId: 'me'});
     const userGoogleId = me.data.id;
     const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+    console.log(me.data);
+    const displayName =  me.data.displayName;
+    const image =  me.data.image;
     return {
       id: userGoogleId,
       email: userGoogleEmail,
       tokens: tokens,
+      displayName: displayName,
+      image: image
     };
   }
 };
@@ -160,7 +166,7 @@ function handleError(res, reason, message, code) {
 
 function validateContributionData(contribution, callback) {
   // Checks if the contribution has either an url or text
-  if (!contribution.title || (!contribution.url && !contribution.text) || !contribution.author_id) {
+  if (!contribution.title || (!contribution.url && !contribution.text) || !contribution.access_token) {
     callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
   }
   else if (contribution.url && contribution.text) {
@@ -200,49 +206,76 @@ app.get("/api/contributions", function(req, res) {
 });
 
 app.post("/api/contributions", function(req, res) {
-  var newContribution = {};
-  newContribution.createDate = new Date();
+  var token = req.body.access_token;
+  console.log(req.body);
+  if (!token) {
+    handleError(res, "Bad request", "No token provided", 401);
+  }
+  else {
+    db.collection(USERS_COLLECTION).findOne({ "tokens.access_token": token }, function(err, doc) {
+      if (err) {
+        handleError(res, "Unauthorized", "Failed to authenticate token", 401);
+      } else {
+        if (doc.tokens.access_token == token) {
+          // All good
+          var newContribution = {};
+          newContribution.createDate = new Date();
 
-  validateContributionData(req.body, function(response) {
-    if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
-      handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-    }
-    else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
-      handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
-    }
-    else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
-      db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err, doc) {
-        if (err) {
-          handleError(res, err.message, "Error finding the already existing url contribution");
-        } else {
-          var errorResponse = {};
-          errorResponse.error = "A contribution with this url already exists";
-          errorResponse.contributionId = doc._id;
-          res.status(302).json(errorResponse);
-        }
-      });
-    }
-    else if (response == ERROR_CONTRIBUTION_OK) {
-      newContribution.title = req.body.title;
-      if (req.body.url) {
-        newContribution.url = req.body.url;
-      }
-      else {
-        // if (req.body.title.slice(-1) == "?") {
-        //   newContribution.title = "Ask HN: "+req.body.title;
-        // }
-        newContribution.text = req.body.text;
-      }
-      db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-        if (err) {
-          handleError(res, err.message, "Failed to create new contribution.");
+          validateContributionData(req.body, function(response) {
+            if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
+              handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+            }
+            else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
+              handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
+            }
+            else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
+              db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+                if (err2) {
+                  handleError(res, err2.message, "Error finding the already existing url contribution");
+                } else {
+                  var errorResponse = {};
+                  errorResponse.error = "A contribution with this url already exists";
+                  errorResponse.contributionId = doc2._id;
+                  //res.status(302).json(errorResponse);
+                  // Redirect to base url
+                  //var newPath = req.originalUrl.split('api')[0];
+                  var newPath = 'http://'+req.headers.host+'/#/contribution/'+doc2._id;
+                  console.log(newPath);
+                  errorResponse.redirectUrl = newPath;
+                  res.status(302).json(errorResponse);
+                  //res.redirect(301, newPath);
+                }
+              });
+            }
+            else if (response == ERROR_CONTRIBUTION_OK) {
+              newContribution.title = req.body.title;
+              if (req.body.url) {
+                newContribution.url = req.body.url;
+              }
+              else {
+                // if (req.body.title.slice(-1) == "?") {
+                //   newContribution.title = "Ask HN: "+req.body.title;
+                // }
+                newContribution.text = req.body.text;
+              }
+              newContribution.author_id = doc._id;
+              db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+                if (err) {
+                  handleError(res, err.message, "Failed to create new contribution.");
+                }
+                else {
+                  res.status(201).json(doc.ops[0]);
+                }
+              });
+            }
+          });
         }
         else {
-          res.status(201).json(doc.ops[0]);
+          handleError(res, "Unauthorized", "Failed to authenticate token", 401);
         }
-      });
-    }
-  });
+      }
+    });
+  }
   
 });
 
@@ -296,7 +329,14 @@ app.get("/api/contributions/:id", function(req, res) {
     if (err) {
       handleError(res, err.message, "Failed to get contribution");
     } else {
-      res.status(200).json(doc);  
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.author_id) }, function(err2, doc2) {
+        if (err2) {
+          handleError(res, err2.message, "Failed to get contribution");
+        } else {
+          doc.authorName = doc2.name;
+          res.status(200).json(doc);
+        }
+      });
     }
   });
 });
@@ -366,8 +406,10 @@ app.get("/api/users/login-url", function(req, res) {
 // });
 app.get("/api/auth/google/callback", function (req, res) {
   googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
-    //res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
-    res.cookie('access_token', response.tokens.id_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+    //res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
+    res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+    res.cookie('user_display_name', response.displayName, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+    res.cookie('user_image', response.image.url, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
     // Check if user already exists
     db.collection(USERS_COLLECTION).findOne({ email: response.email }, function(err, userFound) {
       if (userFound) {
@@ -378,7 +420,7 @@ app.get("/api/auth/google/callback", function (req, res) {
             //res.status(201).json(response);
 
             // Redirect to base url
-            var newPath = req.originalUrl.split('api')[0]
+            var newPath = req.originalUrl.split('api')[0];
             res.redirect(newPath);
           }
         });
@@ -393,7 +435,7 @@ app.get("/api/auth/google/callback", function (req, res) {
             //res.status(201).json(doc.ops[0]);
 
             // Redirect to base url
-            var newPath = req.originalUrl.split('api')[0]
+            var newPath = req.originalUrl.split('api')[0];
             res.redirect(newPath);
           }
         });
