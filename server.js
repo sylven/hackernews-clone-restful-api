@@ -428,75 +428,130 @@ app.delete("/api/contributions/:id", function(req, res) {
 //
 ///////////////////////////////////////////
 
-// Gets the url to login with Google
-app.get("/api/users/login-url", function(req, res) {
-  var json = {};
-  json.url = googleutils.urlGoogle();
-  res.status(200).json(json);
-});
-
-// Google login callback
-// It creates or updates an user account and saves the token in the cookies
-app.get("/api/auth/google/callback", function (req, res) {
-  googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
-    //res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
-    res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
-    res.cookie('user_display_name', response.displayName, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
-    res.cookie('user_image', response.image.url, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
-    // Check if user already exists
-    db.collection(USERS_COLLECTION).findOne({ email: response.email }, function(err, userFound) {
-      if (userFound) {
-        db.collection(USERS_COLLECTION).updateOne({email: response.email}, response, function(err3, doc3) {
-          if (err3) {
-            handleError(res, err3.message, "Failed to update user");
-          } else {
-            //res.status(201).json(response);
-
-            // Redirect to base url
-            var newPath = req.originalUrl.split('api')[0];
-            res.redirect(newPath);
-          }
-        });
-        //res.status(200).end();
-      }
-      else {
-        db.collection(USERS_COLLECTION).insertOne(response, function(err, doc) {
-          if (err) {
-            handleError(res, err.message, "Failed to create new user.");
-          }
-          else {
-            //res.status(201).json(doc.ops[0]);
-
-            // Redirect to base url
-            var newPath = req.originalUrl.split('api')[0];
-            res.redirect(newPath);
-          }
-        });
-      }
-    });
-      // Then update his token or whatever
-
-      // Else create user
-
-    //console.log(response);
-    //res.status(200).json(response);
-  }).catch(console.error);
-});
-
-// Get user info
-app.get("/api/users/:id", function(req, res) {
-  if (isObjectId(req.params.id)) {
-    db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+  function isAuthTokenValid(res, token, callback) {
+    console.log("Checking Auth Token "+token);
+    db.collection(USERS_COLLECTION).findOne({ "tokens.access_token": token }, function(err, doc) {
       if (err) {
-        handleError(res, err.message, "Failed to get user");
+        handleError(res, "Unauthorized", "Failed to authenticate token", 401);
       } else {
-        let response = {};
-        response.id = doc._id;
-        response.displayName = doc.displayName;
-        res.status(200).json(response);
+        if (doc) {
+          callback(doc._id);
+        } else {
+          handleError(res, "Unauthorized", "Failed to authenticate token", 401);
+        }
       }
     });
-  } else {
-    handleError(res, "Bad request", "Provided id is not valid", 400);
   }
-});
+
+  // Gets the url to login with Google
+  app.get("/api/users/login-url", function(req, res) {
+    var json = {};
+    json.url = googleutils.urlGoogle();
+    res.status(200).json(json);
+  });
+
+  // Google login callback
+  // It creates or updates an user account and saves the token in the cookies
+  app.get("/api/auth/google/callback", function (req, res) {
+    googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
+      //res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
+      res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      res.cookie('user_display_name', response.displayName, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      res.cookie('user_image', response.image.url, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      // Check if user already exists
+      db.collection(USERS_COLLECTION).findOne({ email: response.email }, function(err, userFound) {
+        if (userFound) {
+          db.collection(USERS_COLLECTION).updateOne({email: response.email}, response, function(err3, doc3) {
+            if (err3) {
+              handleError(res, err3.message, "Failed to update user");
+            } else {
+              //res.status(201).json(response);
+
+              // Redirect to base url
+              var newPath = req.originalUrl.split('api')[0];
+              res.redirect(newPath);
+            }
+          });
+          //res.status(200).end();
+        }
+        else {
+          db.collection(USERS_COLLECTION).insertOne(response, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Failed to create new user.");
+            }
+            else {
+              //res.status(201).json(doc.ops[0]);
+
+              // Redirect to base url
+              var newPath = req.originalUrl.split('api')[0];
+              res.redirect(newPath);
+            }
+          });
+        }
+      });
+        // Then update his token or whatever
+
+        // Else create user
+
+      //console.log(response);
+      //res.status(200).json(response);
+    }).catch(console.error);
+  });
+
+  // Get user info
+  app.get("/api/users/:id", function(req, res) {
+    if (isObjectId(req.params.id)) {
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Failed to get user", 404);
+        } else {
+          let response = {};
+          response.id = doc._id;
+          response.displayName = doc.displayName;
+          res.status(200).json(response);
+        }
+      });
+    } else {
+      handleError(res, "Bad request", "Provided id is not valid", 400);
+    }
+  });
+
+  app.put("/api/users", function(req, res) {
+    isAuthTokenValid(req, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
+      if (isObjectId(userId)) {
+        db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+          if (err) {
+            handleError(res, err.message, "User doesn't exist", 404);
+          } else {
+            if (!doc) {
+              handleError(res, err.message, "User doesn't exist", 404);
+            } else {
+              console.log("userId from token "+userId);
+              if (userId == userId) {
+                if (!req.body.about) {
+                  handleError(res, "Invalid user input: Must provide all parameters", "Must provide all parameters.", 400);
+                } else {
+                  var userObject = doc;
+                  delete doc.about;
+                  userObject.about = req.body.about;
+
+                  db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, userObject, function(err2, doc2) {
+                    if (err2) {
+                      handleError(res, err2.message, "Failed to update user");
+                    } else {
+                      res.status(204).end();
+                    }
+                  });
+                }
+              } else {
+                handleError(res, "Unauthorized", "Autnetication token doesn't correspond to user", 401);
+              }      
+            }
+          }
+        });
+      } else {
+        handleError(res, "Bad request", "Provided id is not valid", 400);
+      }
+    });
+  });
