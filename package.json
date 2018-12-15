@@ -27,6 +27,7 @@
     "express": "^4.13.3",
     "mongodb": "^2.0.43",
     "googleapis": "^36.0.0",
-    "cookie-parser": "^1.4.3"
+    "cookie-parser": "^1.4.3",
+    "mongoose": "^5.4.0"
   }
 }
