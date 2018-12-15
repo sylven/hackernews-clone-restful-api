@@ -4,6 +4,7 @@ var bodyParser = require("body-parser");
 var mongodb = require("mongodb");
 var ObjectID = mongodb.ObjectID;
 var cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
 
 const {google} = require('googleapis');
 
@@ -111,6 +112,18 @@ var googleutils = {
 };
 
 
+function isObjectId(value) {
+  try {
+      const { ObjectId } = mongoose.Types;
+      const asString = value.toString(); // value is either ObjectId or string or anything
+      const asObjectId = new ObjectId(asString);
+      const asStringifiedObjectId = asObjectId.toString();
+      return asString === asStringifiedObjectId;
+    } catch (error) {
+      return false;
+    }
+}
+
 var CONTRIBUTIONS_COLLECTION = "contributions";
 var USERS_COLLECTION = "users";
 
@@ -216,7 +229,9 @@ app.post("/api/contributions", function(req, res) {
       if (err) {
         handleError(res, "Unauthorized", "Failed to authenticate token", 401);
       } else {
-        if (doc.tokens.access_token == token) {
+        console.log("POST contribution find user with token");
+        console.log(doc);
+        if (doc) {
           // All good
           var newContribution = {};
           newContribution.createDate = new Date();
@@ -325,85 +340,103 @@ app.get("/api/contributions/ask", function(req, res) {
  */
 
 app.get("/api/contributions/:id", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
-    if (err) {
-      handleError(res, err.message, "Failed to get contribution");
-    } else {
-      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.author_id) }, function(err2, doc2) {
-        if (err2) {
-          handleError(res, err2.message, "Failed to get contribution");
+  if (isObjectId(req.params.id)) {
+    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Failed to get contribution");
         } else {
-          doc.authorName = doc2.name;
-          res.status(200).json(doc);
-        }
-      });
-    }
-  });
-});
-
-app.put("/api/contributions/:id", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
-    if (err) {
-      handleError(res, err.message, "Contribution doesn't exist");
-    } else {
-      validateContributionData(req.body, function(response) {
-        if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
-          handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-        }
-        else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
-          handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
-        }
-        else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
-          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+          db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.author_id) }, function(err2, doc2) {
             if (err2) {
-              handleError(res, err.message, "Error finding the already existing url contribution");
+              handleError(res, err2.message, "Failed to get contribution");
             } else {
-              var errorResponse = {};
-              errorResponse.error = "A contribution with this url already exists";
-              errorResponse.contributionId = doc2._id;
-              res.status(302).json(errorResponse);
+              doc.authorName = doc2.name;
+              res.status(200).json(doc);
             }
           });
         }
-        else if (response == ERROR_CONTRIBUTION_OK) {
-          var updateDoc = req.body;
-          delete updateDoc._id;
-          updateDoc.createDate = doc.createDate;
-          updateDoc.modificationDate = new Date();
-
-          db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err3, doc3) {
-            if (err3) {
-              handleError(res, err3.message, "Failed to update contribution");
-            } else {
-              res.status(204).end();
-            }
-          }); 
-        }
       });
-    }
-  });
+  } else {
+    handleError(res, "Bad request", "Provided id is not valid", 400);
+  }
 });
 
+app.put("/api/contributions/:id", function(req, res) {
+  if (isObjectId(req.params.id)) {
+    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+      if (err) {
+        handleError(res, err.message, "Contribution doesn't exist");
+      } else {
+        validateContributionData(req.body, function(response) {
+          if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
+            handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+          }
+          else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
+            handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
+          }
+          else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
+            db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+              if (err2) {
+                handleError(res, err.message, "Error finding the already existing url contribution");
+              } else {
+                var errorResponse = {};
+                errorResponse.error = "A contribution with this url already exists";
+                errorResponse.contributionId = doc2._id;
+                res.status(302).json(errorResponse);
+              }
+            });
+          }
+          else if (response == ERROR_CONTRIBUTION_OK) {
+            var updateDoc = req.body;
+            delete updateDoc._id;
+            updateDoc.createDate = doc.createDate;
+            updateDoc.modificationDate = new Date();
+
+            db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err3, doc3) {
+              if (err3) {
+                handleError(res, err3.message, "Failed to update contribution");
+              } else {
+                res.status(204).end();
+              }
+            }); 
+          }
+        });
+      }
+    });
+  } else {
+    handleError(res, "Bad request", "Provided id is not valid", 400);
+  }
+});
+
+// TODO Authenticate
 app.delete("/api/contributions/:id", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
-    if (err) {
-      handleError(res, err.message, "Failed to delete contribution");
-    } else {
-      res.status(204).end();
-    }
-  });
+  if (isObjectId(req.params.id)) {
+    db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+      if (err) {
+        handleError(res, err.message, "Failed to delete contribution");
+      } else {
+        res.status(204).end();
+      }
+    });
+  } else {
+    handleError(res, "Bad request", "Provided id is not valid", 400);
+  }
 });
 
+///////////////////////////////////////////
+//
+// USERS
+//
+///////////////////////////////////////////
+
+// Gets the url to login with Google
 app.get("/api/users/login-url", function(req, res) {
   var json = {};
   json.url = googleutils.urlGoogle();
   res.status(200).json(json);
 });
-// app.get("/api/geturl2", function(req, res) {
-//   var object = googleutils.getGoogleAccountFromCode(req.query.code).catch(console.error);
-//   console.log(object);
-//   res.status(200).json(object);
-// });
+
+// Google login callback
+// It creates or updates an user account and saves the token in the cookies
 app.get("/api/auth/google/callback", function (req, res) {
   googleutils.getGoogleAccountFromCode(req.query.code).then(function (response) {
     //res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: true});
@@ -448,4 +481,22 @@ app.get("/api/auth/google/callback", function (req, res) {
     //console.log(response);
     //res.status(200).json(response);
   }).catch(console.error);
+});
+
+// Get user info
+app.get("/api/users/:id", function(req, res) {
+  if (isObjectId(req.params.id)) {
+    db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+      if (err) {
+        handleError(res, err.message, "Failed to get user");
+      } else {
+        let response = {};
+        response.id = doc._id;
+        response.displayName = doc.displayName;
+        res.status(200).json(response);
+      }
+    });
+  } else {
+    handleError(res, "Bad request", "Provided id is not valid", 400);
+  }
 });
