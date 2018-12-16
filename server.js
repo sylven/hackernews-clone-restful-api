@@ -651,25 +651,39 @@ app.delete("/api/contributions/:id", function(req, res) {
     isAuthTokenValid(res, req.body.access_token, function(userId) {
       console.log("userId "+userId);
       if (isObjectId(req.params.id)) {
-        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, contributionResult) {
           if (err) {
             handleError(res, err.message, "Contribution doesn't exist", 404);
           } else {
-            if (!doc) {
+            if (!contributionResult) {
               handleError(res, "Not found", "Contribution doesn't exist", 404);
             } else {
-              if (doc.authorId.toString() != userId) {
+              if (contributionResult.authorId.toString() != userId) {
                 handleError(res, "Unauthorized", "This contribution doesn't belong to you", 401);
               } else {
-                db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
-                  console.log(result);
-                  if (err) {
-                    handleError(res, err.message, "Failed to delete contribution");
+                db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err2, deleteContributionResult) {
+                  console.log(deleteContributionResult);
+                  if (err2) {
+                    handleError(res, err2.message, "Failed to delete contribution");
                   } else {
-                    if (result.deletedCount == 0) {
+                    if (deleteContributionResult.deletedCount == 0) {
                       handleError(res, "Not found", "Contribution not found", 404);
                     } else {
-                      res.status(204).end();
+                      // Update user and contribution
+                      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, userResult) {
+                        if (err3) {
+                          handleError(res, err3.message, "User doesn't exist", 404);
+                        } else {
+                          userResult.points = userResult.points-contributionResult.points;
+                          db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, userResult, function(err4, doc4) {
+                            if (err4) {
+                              handleError(res, err4.message, "Failed to update user");
+                            } else {
+                              res.status(204).end();
+                            }
+                          });
+                        }
+                      });
                     }
                   }
                 });
