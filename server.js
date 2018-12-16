@@ -234,7 +234,7 @@ function validateContributionData(contribution, callback) {
       callback(ERROR_CONTRIBUTION_OK);
     } 
   }
-}
+}-
 
 /*  "/contributions"
  *    GET: finds all contributions
@@ -394,53 +394,72 @@ app.get("/api/contributions/:id", function(req, res) {
 });
 
 app.put("/api/contributions/:id", function(req, res) {
-  if (isObjectId(req.params.id)) {
-    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
-      if (err) {
-        handleError(res, err.message, "Contribution doesn't exist");
-      } else {
-        validateContributionData(req.body, function(response) {
-          if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
-            handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-          }
-          else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
-            handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
-          }
-          else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
-            db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
-              if (err2) {
-                handleError(res, err.message, "Error finding the already existing url contribution");
+  if (!req.body.access_token) {
+    handleError(res, "Unauthorized", "Authentication token was not provided", 401);
+  } else {
+    isAuthTokenValid(res, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
+      if (isObjectId(userId)) {
+        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+          if (err) {
+            handleError(res, err.message, "Contribution doesn't exist", 404);
+          } else {
+            if (!doc) {
+              handleError(res, "Not found", "Contribution doesn't exist", 404);
+            } else {
+              if (doc.authorId.toString() != userId) {
+                handleError(res, "Unauthorized", "This contribution doesn't belong to you", 401);
               } else {
-                var errorResponse = {};
-                errorResponse.error = "A contribution with this url already exists";
-                errorResponse.contributionId = doc2._id;
-                res.status(302).json(errorResponse);
-              }
-            });
-          }
-          else if (response == ERROR_CONTRIBUTION_OK) {
-            var updateDoc = req.body;
-            delete updateDoc._id;
-            updateDoc.createdDate = doc.createdDate;
-            updateDoc.modificationDate = new Date();
+                validateContributionData(req.body, function(response) {
+                  if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
+                    handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+                  }
+                  else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
+                    handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
+                  }
+                  else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
+                    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+                      if (err2) {
+                        handleError(res, err.message, "Error finding the already existing url contribution");
+                      } else {
+                        var errorResponse = {};
+                        errorResponse.error = "A contribution with this url already exists";
+                        errorResponse.contributionId = doc2._id;
+                        res.status(302).json(errorResponse);
+                      }
+                    });
+                  }
+                  else if (response == ERROR_CONTRIBUTION_OK) {
+                    var updatedDoc = doc;
+                    delete updatedDoc.text;
+                    delete updatedDoc.url;
+                    updatedDoc.modificationDate = new Date();
+                    if (req.body.text) {
+                      updatedDoc.text = req.body.text;
+                    } else {
+                      updatedDoc.url = req.body.url;
+                    }
 
-            db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err3, doc3) {
-              if (err3) {
-                handleError(res, err3.message, "Failed to update contribution");
-              } else {
-                res.status(204).end();
+                    db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updatedDoc, function(err3, doc3) {
+                      if (err3) {
+                        handleError(res, err3.message, "Failed to update contribution");
+                      } else {
+                        res.status(204).end();
+                      }
+                    }); 
+                  }
+                });
               }
-            }); 
+            }
           }
         });
+      } else {
+        handleError(res, "Bad request", "Provided id is not valid", 400);
       }
     });
-  } else {
-    handleError(res, "Bad request", "Provided id is not valid", 400);
   }
 });
 
-// TODO Authenticate
 app.delete("/api/contributions/:id", function(req, res) {
   var token = req.body.access_token;
   console.log(req.body);
