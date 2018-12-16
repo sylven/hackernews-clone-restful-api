@@ -206,6 +206,35 @@ const {google} = require('googleapis');
 //
 ///////////////////////////////////////////
 
+app.get("/api/comments/:id", function(req, res) {
+  if (isObjectId(req.params.id)) {
+    db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+        if (err) {
+          handleError(res, "Comment doesn't exist", "Comment not found", 404);
+        } else {
+          if (doc) {
+            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err2, doc2) {
+              if (err2) {
+                handleError(res, "Failed to get comment's author", "Comment not found");
+              } else {
+                if (doc2) {
+                  doc.authorName = doc2.displayName;
+                  res.status(200).json(doc);
+                } else {
+                  handleError(res, "Comment's author doesn't exist anymore", "Comment's author doesn't exist anymore", 500);
+                }
+              }
+            });
+          } else {
+            handleError(res, "Comment doesn't exist", "Comment not found", 404);
+          }
+        }
+      });
+  } else {
+    handleError(res, "Bad request", "Provided id is not valid", 400);
+  }
+});
+
 app.post("/api/contributions/:id/comments", function(req, res) {
   var token = req.body.access_token;
   console.log(req.body);
@@ -235,7 +264,7 @@ app.post("/api/contributions/:id/comments", function(req, res) {
                 handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
               } else {
                 newComment.text = req.body.text;
-                newComment.authorId = userId;
+                newComment.authorId = userId.toString();
                 db.collection(COMMENTS_COLLECTION).insertOne(newComment, function(err2, doc2) {
                   if (err2) {
                     handleError(res, err2.message, "Failed to create new comment.");
