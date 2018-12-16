@@ -283,6 +283,81 @@ app.post("/api/contributions/:id/comments", function(req, res) {
   }
 });
 
+app.delete("/api/comments/:id", function(req, res) {
+  if (!req.body.access_token) {
+    handleError(res, "Unauthorized", "Authentication token was not provided", 401);
+  }
+  else {
+    isAuthTokenValid(res, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
+      if (isObjectId(req.params.id)) {
+        db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+          if (err) {
+            handleError(res, err.message, "Comment doesn't exist", 404);
+          } else {
+            if (!doc) {
+              handleError(res, "Not found", "Comment doesn't exist", 404);
+            } else {
+              if (doc.authorId.toString() != userId) {
+                handleError(res, "Unauthorized", "This comment doesn't belong to you", 401);
+              } else {
+                const commentPoints = doc.points;
+                const contributionId = doc.contributionId;
+                const commentReplies = doc.replies;
+                db.collection(COMMENTS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+                  console.log(result);
+                  if (err) {
+                    handleError(res, err.message, "Failed to delete comment");
+                  } else {
+                    if (result.deletedCount == 0) {
+                      handleError(res, "Not found", "Comment not found", 404);
+                    } else {
+                      // TODO: Delete all sub comments?
+
+
+                      // Update user and contribution
+                      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+                        if (err3) {
+                          handleError(res, err3.message, "User doesn't exist", 404);
+                        } else {
+                          doc3.points = doc3.points-commentPoints;
+                          db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                            if (err4) {
+                              handleError(res, err4.message, "Failed to update user");
+                            } else {
+                              // Update contribution comments
+                              db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(contributionId) }, function(err5, doc5) {
+                                if (err5) {
+                                  handleError(res, err5.message, "Contribution doesn't exist", 404);
+                                } else {
+                                  doc5.comments = doc5.comments-1-commentReplies;
+                                  db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(contributionId)}, doc5, function(err6, doc6) {
+                                    if (err6) {
+                                      handleError(res, err6.message, "Failed to update contribution");
+                                    } else {
+                                      res.status(204).end();
+                                    }
+                                  });
+                                }
+                              });
+                            }
+                          });
+                        }
+                      });
+                    }
+                  }
+                });
+              }
+            }
+          }
+        });
+      } else {
+        handleError(res, "Bad request", "Provided id is not valid", 400);
+      }
+    });
+  }
+});
+
 ///////////////////////////////////////////
 //
 // CONTRIBUTIONS
