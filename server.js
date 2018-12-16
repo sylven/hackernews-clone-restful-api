@@ -1180,6 +1180,8 @@ const {google} = require('googleapis');
           updatedUser.tokens = response.tokens;
           delete updatedUser.image;
           updatedUser.image = response.image;
+          
+          res.cookie('user_id', userFound._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
 
           console.log("User object updated");
           console.log(updatedUser);
@@ -1187,6 +1189,7 @@ const {google} = require('googleapis');
             if (err3) {
               handleError(res, err3.message, "Failed to update user");
             } else {
+              //console.log(doc3);
               //res.status(201).json(response);
 
               // Redirect to base url
@@ -1210,6 +1213,7 @@ const {google} = require('googleapis');
             }
             else {
               //res.status(201).json(doc.ops[0]);
+              res.cookie('user_id', doc._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
 
               // Redirect to base url
               var newPath = req.originalUrl.split('api')[0];
