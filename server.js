@@ -169,7 +169,11 @@ mongodb.MongoClient.connect(mongodbURI, function (err, database) {
   });
 });
 
-// CONTRIBUTIONS API ROUTES BELOW
+///////////////////////////////////////////
+//
+// GENERAL
+//
+///////////////////////////////////////////
 
 // Generic error handler used by all endpoints.
 function handleError(res, reason, message, code) {
@@ -177,9 +181,21 @@ function handleError(res, reason, message, code) {
   res.status(code || 500).json({"error": message});
 }
 
+///////////////////////////////////////////
+//
+// COMMENTS
+//
+///////////////////////////////////////////
+
+///////////////////////////////////////////
+//
+// CONTRIBUTIONS
+//
+///////////////////////////////////////////
+
 function validateContributionData(contribution, callback) {
   // Checks if the contribution has either an url or text
-  if (!contribution.title || (!contribution.url && !contribution.text) || !contribution.access_token) {
+  if (!contribution.title || (!contribution.url && !contribution.text)) {
     callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
   }
   else if (contribution.url && contribution.text) {
@@ -225,80 +241,85 @@ app.post("/api/contributions", function(req, res) {
     handleError(res, "Bad request", "No token provided", 401);
   }
   else {
-    db.collection(USERS_COLLECTION).findOne({ "tokens.access_token": token }, function(err, doc) {
-      if (err) {
-        handleError(res, "Unauthorized", "Failed to authenticate token", 401);
-      } else {
-        console.log("POST contribution find user with token");
-        console.log(doc);
-        if (doc) {
-          // All good
-          var newContribution = {};
-          newContribution.createDate = new Date();
+    isAuthTokenValid(res, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
 
-          validateContributionData(req.body, function(response) {
-            if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
-              handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-            }
-            else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
-              handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
-            }
-            else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
-              db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
-                if (err2) {
-                  handleError(res, err2.message, "Error finding the already existing url contribution");
-                } else {
-                  var errorResponse = {};
-                  errorResponse.error = "A contribution with this url already exists";
-                  errorResponse.contributionId = doc2._id;
-                  //res.status(302).json(errorResponse);
-                  // Redirect to base url
-                  //var newPath = req.originalUrl.split('api')[0];
-                  var newPath = 'http://'+req.headers.host+'/#/contribution/'+doc2._id;
-                  console.log(newPath);
-                  errorResponse.redirectUrl = newPath;
-                  res.status(302).json(errorResponse);
-                  //res.redirect(301, newPath);
-                }
-              });
-            }
-            else if (response == ERROR_CONTRIBUTION_OK) {
-              newContribution.title = req.body.title;
-              if (req.body.url) {
-                newContribution.url = req.body.url;
-              }
-              else {
-                // if (req.body.title.slice(-1) == "?") {
-                //   newContribution.title = "Ask HN: "+req.body.title;
-                // }
-                newContribution.text = req.body.text;
-              }
-              newContribution.author_id = doc._id;
-              db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-                if (err) {
-                  handleError(res, err.message, "Failed to create new contribution.");
-                }
-                else {
-                  res.status(201).json(doc.ops[0]);
-                }
-              });
+      // All good
+      var newContribution = {};
+      newContribution.createdDate = new Date();
+      newContribution.points = 0;
+      newContribution.comments = 0;
+
+      validateContributionData(req.body, function(response) {
+        if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
+          handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+        }
+        else if (response == ERROR_CONTRIBUTION_URL_OR_TEXT) {
+          handleError(res, "Invalid contribution input: You can only provide a text or url", "You can only provide a text or url", 400);
+        }
+        else if (response == ERROR_CONTRIBUTION_URL_EXISTS) {
+          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: req.body.url }, function(err2, doc2) {
+            if (err2) {
+              handleError(res, err2.message, "Error checking if a contribution with same url exists");
+            } else {
+              var errorResponse = {};
+              errorResponse.error = "A contribution with this url already exists";
+              errorResponse.contributionId = doc2._id;
+              //res.status(302).json(errorResponse);
+              // Redirect to base url
+              //var newPath = req.originalUrl.split('api')[0];
+              var newPath = 'http://'+req.headers.host+'/#/contribution/'+doc2._id;
+              console.log(newPath);
+              errorResponse.redirectUrl = newPath;
+              res.status(302).json(errorResponse);
+              //res.redirect(301, newPath);
             }
           });
         }
-        else {
-          handleError(res, "Unauthorized", "Failed to authenticate token", 401);
+        else if (response == ERROR_CONTRIBUTION_OK) {
+          newContribution.title = req.body.title;
+          if (req.body.url) {
+            newContribution.url = req.body.url;
+          }
+          else {
+            // if (req.body.title.slice(-1) == "?") {
+            //   newContribution.title = "Ask HN: "+req.body.title;
+            // }
+            newContribution.text = req.body.text;
+          }
+          newContribution.authorId = userId;
+          db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Failed to create new contribution.");
+            }
+            else {
+              res.status(201).json(doc.ops[0]);
+            }
+          });
         }
-      }
+      });
     });
   }
-  
+});
+
+/*  "/contributions/ask"
+ *    GET: find all contributions of type ask
+ */
+app.get("/api/contributions/ask", function(req, res) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\\?$" } }).toArray(function(err, docs) {
+    if (err) {
+      handleError(res, err.message, "Failed to get contributions.");
+    } else {
+      res.status(200).json(docs);  
+    }
+  });
 });
 
 /*  "/contributions/new"
  *    GET: find all contributions ordered by date
  */
 app.get("/api/contributions/new", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['createDate', 'desc']]}).toArray(function(err, docs) {
+  db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['createdDate', 'desc']]}).toArray(function(err, docs) {
     if (err) {
       handleError(res, err.message, "Failed to get contributions.");
     } else {
@@ -320,19 +341,6 @@ app.get("/api/contributions/new", function(req, res) {
 //   });
 // });
 
-/*  "/contributions/ask"
- *    GET: find all contributions of type ask
- */
-app.get("/api/contributions/ask", function(req, res) {
-  db.collection(CONTRIBUTIONS_COLLECTION).find({ title: { $regex: "\\?$" } }).toArray(function(err, docs) {
-    if (err) {
-      handleError(res, err.message, "Failed to get contributions.");
-    } else {
-      res.status(200).json(docs);  
-    }
-  });
-});
-
 /*  "/contributions/:id"
  *    GET: find contribution by id
  *    PUT: update contribution by id
@@ -343,16 +351,24 @@ app.get("/api/contributions/:id", function(req, res) {
   if (isObjectId(req.params.id)) {
     db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
         if (err) {
-          handleError(res, err.message, "Failed to get contribution");
+          handleError(res, "Contribution doesn't exist", "Contribution not found", 404);
         } else {
-          db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.author_id) }, function(err2, doc2) {
-            if (err2) {
-              handleError(res, err2.message, "Failed to get contribution");
-            } else {
-              doc.authorName = doc2.name;
-              res.status(200).json(doc);
-            }
-          });
+          if (doc) {
+            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err2, doc2) {
+              if (err2) {
+                handleError(res, "Failed to get contribution's author", "Contribution not found");
+              } else {
+                if (doc2) {
+                  doc.authorName = doc2.displayName;
+                  res.status(200).json(doc);
+                } else {
+                  handleError(res, "Contribution's author doesn't exist anymore", "Contribution's author doesn't exist anymore", 500);
+                }
+              }
+            });
+          } else {
+            handleError(res, "Contribution doesn't exist", "Contribution not found", 404);
+          }
         }
       });
   } else {
@@ -388,7 +404,7 @@ app.put("/api/contributions/:id", function(req, res) {
           else if (response == ERROR_CONTRIBUTION_OK) {
             var updateDoc = req.body;
             delete updateDoc._id;
-            updateDoc.createDate = doc.createDate;
+            updateDoc.createdDate = doc.createdDate;
             updateDoc.modificationDate = new Date();
 
             db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, updateDoc, function(err3, doc3) {
@@ -409,17 +425,33 @@ app.put("/api/contributions/:id", function(req, res) {
 
 // TODO Authenticate
 app.delete("/api/contributions/:id", function(req, res) {
-  if (isObjectId(req.params.id)) {
-    db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
-      if (err) {
-        handleError(res, err.message, "Failed to delete contribution");
+  var token = req.body.access_token;
+  console.log(req.body);
+  if (!token) {
+    handleError(res, "Bad request", "No token provided", 401);
+  }
+  else {
+    isAuthTokenValid(res, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
+
+      if (isObjectId(req.params.id)) {
+        db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+          console.log(result);
+          if (err) {
+            handleError(res, err.message, "Failed to delete contribution");
+          } else {
+            if (result.deletedCount == 0) {
+              handleError(res, "Not found", "Contribution not found", 404);
+            } else {
+              res.status(204).end();
+            }
+          }
+        });
       } else {
-        res.status(204).end();
+        handleError(res, "Bad request", "Provided id is not valid", 400);
       }
     });
-  } else {
-    handleError(res, "Bad request", "Provided id is not valid", 400);
-  }
+  }  
 });
 
 ///////////////////////////////////////////
@@ -459,9 +491,19 @@ app.delete("/api/contributions/:id", function(req, res) {
       res.cookie('user_display_name', response.displayName, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
       res.cookie('user_image', response.image.url, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
       // Check if user already exists
+      console.log("User object from Google");
+      console.log(response);
       db.collection(USERS_COLLECTION).findOne({ email: response.email }, function(err, userFound) {
         if (userFound) {
-          db.collection(USERS_COLLECTION).updateOne({email: response.email}, response, function(err3, doc3) {
+          let updatedUser = userFound;
+          delete updatedUser.tokens;
+          updatedUser.tokens = response.tokens;
+          delete updatedUser.image;
+          updatedUser.image = response.image;
+
+          console.log("User object updated");
+          console.log(updatedUser);
+          db.collection(USERS_COLLECTION).updateOne({email: response.email}, updatedUser, function(err3, doc3) {
             if (err3) {
               handleError(res, err3.message, "Failed to update user");
             } else {
@@ -475,7 +517,14 @@ app.delete("/api/contributions/:id", function(req, res) {
           //res.status(200).end();
         }
         else {
-          db.collection(USERS_COLLECTION).insertOne(response, function(err, doc) {
+          let insertUser = response;
+          insertUser.about = "";
+          insertUser.points = "";
+          insertUser.createdDate = new Date();
+
+          console.log("User object new");
+          console.log(insertUser);
+          db.collection(USERS_COLLECTION).insertOne(insertUser, function(err, doc) {
             if (err) {
               handleError(res, err.message, "Failed to create new user.");
             }
@@ -505,10 +554,17 @@ app.delete("/api/contributions/:id", function(req, res) {
         if (err) {
           handleError(res, err.message, "Failed to get user", 404);
         } else {
-          let response = {};
-          response.id = doc._id;
-          response.displayName = doc.displayName;
-          res.status(200).json(response);
+          if (doc) {
+            let response = {};
+            response.id = req.params.id;
+            response.displayName = doc.displayName;
+            response.about = doc.about;
+            response.createdDate = doc.createdDate;
+            response.points = doc.points;
+            res.status(200).json(response);
+          } else {
+            handleError(res, "Not found", "Failed to get user", 404);
+          }
         }
       });
     } else {
@@ -517,41 +573,45 @@ app.delete("/api/contributions/:id", function(req, res) {
   });
 
   app.put("/api/users", function(req, res) {
-    isAuthTokenValid(req, req.body.access_token, function(userId) {
-      console.log("userId "+userId);
-      if (isObjectId(userId)) {
-        db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
-          if (err) {
-            handleError(res, err.message, "User doesn't exist", 404);
-          } else {
-            if (!doc) {
+    if (!req.body.access_token) {
+      handleError(res, "Unauthorized", "Authentication token was not provided", 401);
+    } else {
+      isAuthTokenValid(res, req.body.access_token, function(userId) {
+        console.log("userId "+userId);
+        if (isObjectId(userId)) {
+          db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+            if (err) {
               handleError(res, err.message, "User doesn't exist", 404);
             } else {
-              console.log("userId from token "+userId);
-              if (userId == userId) {
-                if (!req.body.about) {
-                  handleError(res, "Invalid user input: Must provide all parameters", "Must provide all parameters.", 400);
-                } else {
-                  var userObject = doc;
-                  delete doc.about;
-                  userObject.about = req.body.about;
-
-                  db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, userObject, function(err2, doc2) {
-                    if (err2) {
-                      handleError(res, err2.message, "Failed to update user");
-                    } else {
-                      res.status(204).end();
-                    }
-                  });
-                }
+              if (!doc) {
+                handleError(res, err.message, "User doesn't exist", 404);
               } else {
-                handleError(res, "Unauthorized", "Autnetication token doesn't correspond to user", 401);
-              }      
+                console.log("userId from token "+userId);
+                if (userId == userId) {
+                  if (!req.body.about) {
+                    handleError(res, "Invalid user input: Must provide all parameters", "Must provide all parameters.", 400);
+                  } else {
+                    var userObject = doc;
+                    delete doc.about;
+                    userObject.about = req.body.about;
+
+                    db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, userObject, function(err2, doc2) {
+                      if (err2) {
+                        handleError(res, err2.message, "Failed to update user");
+                      } else {
+                        res.status(204).end();
+                      }
+                    });
+                  }
+                } else {
+                  handleError(res, "Unauthorized", "Authentication token doesn't correspond to user", 401);
+                }      
+              }
             }
-          }
-        });
-      } else {
-        handleError(res, "Bad request", "Provided id is not valid", 400);
-      }
-    });
+          });
+        } else {
+          handleError(res, "Bad request", "Provided id is not valid", 400);
+        }
+      });
+    }
   });
