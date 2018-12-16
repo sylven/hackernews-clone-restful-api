@@ -478,7 +478,7 @@ app.put("/api/contributions/:id", function(req, res) {
   } else {
     isAuthTokenValid(res, req.body.access_token, function(userId) {
       console.log("userId "+userId);
-      if (isObjectId(userId)) {
+      if (isObjectId(req.params.id)) {
         db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
           if (err) {
             handleError(res, err.message, "Contribution doesn't exist", 404);
@@ -540,25 +540,36 @@ app.put("/api/contributions/:id", function(req, res) {
 });
 
 app.delete("/api/contributions/:id", function(req, res) {
-  var token = req.body.access_token;
-  console.log(req.body);
-  if (!token) {
-    handleError(res, "Bad request", "No token provided", 401);
+  if (!req.body.access_token) {
+    handleError(res, "Unauthorized", "Authentication token was not provided", 401);
   }
   else {
     isAuthTokenValid(res, req.body.access_token, function(userId) {
       console.log("userId "+userId);
-
       if (isObjectId(req.params.id)) {
-        db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
-          console.log(result);
+        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
           if (err) {
-            handleError(res, err.message, "Failed to delete contribution");
+            handleError(res, err.message, "Contribution doesn't exist", 404);
           } else {
-            if (result.deletedCount == 0) {
-              handleError(res, "Not found", "Contribution not found", 404);
+            if (!doc) {
+              handleError(res, "Not found", "Contribution doesn't exist", 404);
             } else {
-              res.status(204).end();
+              if (doc.authorId.toString() != userId) {
+                handleError(res, "Unauthorized", "This contribution doesn't belong to you", 401);
+              } else {
+                db.collection(CONTRIBUTIONS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+                  console.log(result);
+                  if (err) {
+                    handleError(res, err.message, "Failed to delete contribution");
+                  } else {
+                    if (result.deletedCount == 0) {
+                      handleError(res, "Not found", "Contribution not found", 404);
+                    } else {
+                      res.status(204).end();
+                    }
+                  }
+                });
+              }
             }
           }
         });
