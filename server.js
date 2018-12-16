@@ -116,6 +116,8 @@ const {google} = require('googleapis');
 
   var CONTRIBUTIONS_COLLECTION = "contributions";
   var USERS_COLLECTION = "users";
+  var COMMENTS_COLLECTION = "comments";
+  var REPLIES_COLLECTION = "replies";
 
   var ERROR_CONTRIBUTION_OK = 0;
   var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
@@ -204,6 +206,55 @@ const {google} = require('googleapis');
 //
 ///////////////////////////////////////////
 
+app.post("/api/contributions/:id/comments", function(req, res) {
+  var token = req.body.access_token;
+  console.log(req.body);
+  if (!token) {
+    handleError(res, "Bad request", "No token provided", 401);
+  }
+  else {
+    isAuthTokenValid(res, req.body.access_token, function(userId) {
+      console.log("userId "+userId);
+
+      if (isObjectId(req.params.id)) {
+        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+          if (err) {
+            handleError(res, err.message, "Contribution doesn't exist", 404);
+          } else {
+            if (!doc) {
+              handleError(res, "Not found", "Contribution doesn't exist", 404);
+            } else {
+              // All good
+              var newComment = {};
+              newComment.contributionId = req.params.id;
+              newComment.createdDate = new Date();
+              newComment.points = 0;
+              newComment.replies = 0;
+
+              if (!req.body.text) {
+                handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+              } else {
+                newComment.text = req.body.text;
+                newComment.authorId = userId;
+                db.collection(COMMENTS_COLLECTION).insertOne(newComment, function(err2, doc2) {
+                  if (err2) {
+                    handleError(res, err2.message, "Failed to create new comment.");
+                  }
+                  else {
+                    res.status(201).json(doc2.ops[0]);
+                  }
+                });
+              }
+            }
+          }
+        });
+      } else {
+        handleError(res, "Bad request", "Provided id is not valid", 400);
+      }
+    });
+  }
+});
+
 ///////////////////////////////////////////
 //
 // CONTRIBUTIONS
@@ -234,7 +285,7 @@ function validateContributionData(contribution, callback) {
       callback(ERROR_CONTRIBUTION_OK);
     } 
   }
-}-
+}
 
 /*  "/contributions"
  *    GET: finds all contributions
@@ -605,7 +656,7 @@ app.delete("/api/contributions/:id", function(req, res) {
               handleError(res, err.message, "User doesn't exist", 404);
             } else {
               if (!doc) {
-                handleError(res, err.message, "User doesn't exist", 404);
+                handleError(res, "Not found", "User doesn't exist", 404);
               } else {
                 console.log("userId from token "+userId);
                 if (userId == userId) {
