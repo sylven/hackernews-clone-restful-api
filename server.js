@@ -493,7 +493,21 @@ app.post("/api/contributions", function(req, res) {
               handleError(res, err.message, "Failed to create new contribution.");
             }
             else {
-              res.status(201).json(doc.ops[0]);
+              // Update user points
+              db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+                if (err3) {
+                  handleError(res, err3.message, "User doesn't exist", 404);
+                } else {
+                  doc3.points = doc3.points+1;
+                  db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                    if (err4) {
+                      handleError(res, err4.message, "Failed to update user");
+                    } else {
+                      res.status(201).json(doc.ops[0]);
+                    }
+                  });
+                }
+              });
             }
           });
         }
