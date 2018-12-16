@@ -472,6 +472,20 @@ const {google} = require('googleapis');
     }
   });
 
+
+  /*  "/users/:id/comments"
+   *    GET: find all comments of the logged in user
+   */
+  app.get("/api/users/:id/comments", function(req, res) {
+    db.collection(COMMENTS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err, docs) {
+      if (err) {
+        handleError(res, err.message, "Failed to get contributions.");
+      } else {
+        res.status(200).json(docs);  
+      }
+    });
+  });
+
 ///////////////////////////////////////////
 //
 // VOTES
@@ -889,19 +903,6 @@ const {google} = require('googleapis');
       }
     });
   });
-
-  /*  "/contributions/threads"
-   *    GET: find all comments of the logged in user
-   */
-  // app.get("/api/contributions/threads", function(req, res) {
-  //   db.collection(CONTRIBUTIONS_COLLECTION).find({ text: { $exists: true } }).toArray(function(err, docs) {
-  //     if (err) {
-  //       handleError(res, err.message, "Failed to get contributions.");
-  //     } else {
-  //       res.status(200).json(docs);  
-  //     }
-  //   });
-  // });
 
   /*  "/contributions/:id"
    *    GET: find contribution by id
