@@ -835,7 +835,7 @@ const {google} = require('googleapis');
               // }
               newContribution.text = req.body.text;
             }
-            newContribution.authorId = userId;
+            newContribution.authorId = userId.toString();
             db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
               if (err) {
                 handleError(res, err.message, "Failed to create new contribution.");
