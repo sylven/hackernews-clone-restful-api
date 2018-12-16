@@ -472,20 +472,6 @@ const {google} = require('googleapis');
     }
   });
 
-
-  /*  "/users/:id/comments"
-   *    GET: find all comments of the logged in user
-   */
-  app.get("/api/users/:id/comments", function(req, res) {
-    db.collection(COMMENTS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err, docs) {
-      if (err) {
-        handleError(res, err.message, "Failed to get contributions.");
-      } else {
-        res.status(200).json(docs);  
-      }
-    });
-  });
-
 ///////////////////////////////////////////
 //
 // VOTES
@@ -1066,6 +1052,19 @@ const {google} = require('googleapis');
 // USERS
 //
 ///////////////////////////////////////////
+
+  /*  "/users/:id/comments"
+   *    GET: find all comments of the logged in user
+   */
+  app.get("/api/users/:id/comments", function(req, res) {
+    db.collection(COMMENTS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err, docs) {
+      if (err) {
+        handleError(res, err.message, "Failed to get contributions.");
+      } else {
+        res.status(200).json(docs);  
+      }
+    });
+  });
 
   // Gets the url to login with Google
   app.get("/api/users/login-url", function(req, res) {
