@@ -228,7 +228,7 @@ app.post("/api/contributions/:id/comments", function(req, res) {
               var newComment = {};
               newComment.contributionId = req.params.id;
               newComment.createdDate = new Date();
-              newComment.points = 0;
+              newComment.points = 1;
               newComment.replies = 0;
 
               if (!req.body.text) {
@@ -241,7 +241,35 @@ app.post("/api/contributions/:id/comments", function(req, res) {
                     handleError(res, err2.message, "Failed to create new comment.");
                   }
                   else {
-                    res.status(201).json(doc2.ops[0]);
+                    // Update user points
+                    db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+                      if (err3) {
+                        handleError(res, err3.message, "User doesn't exist", 404);
+                      } else {
+                        doc3.points = doc3.points+1;
+                        db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                          if (err4) {
+                            handleError(res, err4.message, "Failed to update user");
+                          } else {
+                            // Update contribution comments
+                            db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
+                              if (err5) {
+                                handleError(res, err5.message, "Contribution doesn't exist", 404);
+                              } else {
+                                doc5.comments = doc5.comments+1;
+                                db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
+                                  if (err6) {
+                                    handleError(res, err6.message, "Failed to update contribution");
+                                  } else {
+                                    res.status(201).json(doc2.ops[0]);
+                                  }
+                                });
+                              }
+                            });
+                          }
+                        });
+                      }
+                    });
                   }
                 });
               }
@@ -315,7 +343,7 @@ app.post("/api/contributions", function(req, res) {
       // All good
       var newContribution = {};
       newContribution.createdDate = new Date();
-      newContribution.points = 0;
+      newContribution.points = 1;
       newContribution.comments = 0;
 
       validateContributionData(req.body, function(response) {
@@ -591,7 +619,7 @@ app.delete("/api/contributions/:id", function(req, res) {
         else {
           let insertUser = response;
           insertUser.about = "";
-          insertUser.points = "";
+          insertUser.points = 0;
           insertUser.createdDate = new Date();
 
           console.log("User object new");
