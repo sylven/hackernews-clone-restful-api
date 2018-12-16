@@ -8,166 +8,156 @@ const mongoose = require('mongoose');
 
 const {google} = require('googleapis');
 
-/*******************/
-/** CONFIGURATION **/
-/*******************/
-var googleConfig;
-if (process.env.ENVIRONMENT == 'production') {
-  googleConfig = {
-    clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
-    clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
-    redirect: 'https://hackernews-clone-restful-api.herokuapp.com/api/auth/google/callback' // this must match your google api settings
-  };
-}
-else {
-  googleConfig = {
-    clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
-    clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
-    redirect: 'http://localhost:8080/api/auth/google/callback' // this must match your google api settings
-  };
-}
+///////////////////////////////////////////
+//
+// CONFIG
+//
+///////////////////////////////////////////
 
-const defaultScope = [
-  'https://www.googleapis.com/auth/plus.me',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-];
-
-var googleutils = {
-  /*************/
-  /** HELPERS **/
-  /*************/
-
-  createConnection: function() {
-    return new google.auth.OAuth2(
-        googleConfig.clientId,
-        googleConfig.clientSecret,
-        googleConfig.redirect
-    );
-  },
-
-  getConnectionUrl: function(auth) {
-    return auth.generateAuthUrl({
-      access_type: 'offline',
-      prompt: 'consent',
-      scope: defaultScope
-    });
-  },
-
-  getGooglePlusApi: function(auth) {
-    return google.plus({ version: 'v1', auth });
-  },
-
-  /**********/
-  /** MAIN **/
-  /**********/
-
-  /**
-   * Part 1: Create a Google URL and send to the client to log in the user.
-   */
-  urlGoogle: function() {
-    const auth = this.createConnection();
-    const url = this.getConnectionUrl(auth);
-    return url;
-  },
-
-  /**
-   * Part 2: Take the "code" parameter which Google gives us once when the user logs in, then get the user's email and id.
-   */
-  // getGoogleAccountFromCode: function (code) {
-  //   const data = await auth.getToken(code);
-  //   const tokens = data.tokens;
-  //   const auth = createConnection();
-  //   auth.setCredentials(tokens);
-  //   const plus = getGooglePlusApi(auth);
-  //   const me = await plus.people.get({userId: 'me'});
-  //   const userGoogleId = me.data.id;
-  //   const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
-  //   return {
-  //     id: userGoogleId,
-  //     email: userGoogleEmail,
-  //     tokens: tokens,
-  //   };
-  // }
-  getGoogleAccountFromCode: async function (code) {
-    const auth = await this.createConnection();
-    const data = await auth.getToken(code);
-    const tokens = data.tokens;
-    auth.setCredentials(tokens);
-    const plus = this.getGooglePlusApi(auth);
-    const me = await plus.people.get({userId: 'me'});
-    const userGoogleId = me.data.id;
-    const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
-    console.log(me.data);
-    const displayName =  me.data.displayName;
-    const image =  me.data.image;
-    return {
-      id: userGoogleId,
-      email: userGoogleEmail,
-      tokens: tokens,
-      displayName: displayName,
-      image: image
+  var googleConfig;
+  if (process.env.ENVIRONMENT == 'production') {
+    googleConfig = {
+      clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
+      clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
+      redirect: 'https://hackernews-clone-restful-api.herokuapp.com/api/auth/google/callback' // this must match your google api settings
     };
   }
-};
-
-
-function isObjectId(value) {
-  try {
-      const { ObjectId } = mongoose.Types;
-      const asString = value.toString(); // value is either ObjectId or string or anything
-      const asObjectId = new ObjectId(asString);
-      const asStringifiedObjectId = asObjectId.toString();
-      return asString === asStringifiedObjectId;
-    } catch (error) {
-      return false;
-    }
-}
-
-var CONTRIBUTIONS_COLLECTION = "contributions";
-var USERS_COLLECTION = "users";
-
-var ERROR_CONTRIBUTION_OK = 0;
-var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
-var ERROR_CONTRIBUTION_URL_OR_TEXT = -2;
-var ERROR_CONTRIBUTION_URL_EXISTS = -3;
-
-var app = express();
-app.use(express.static(__dirname + "/public"));
-app.use(bodyParser.json());
-app.use(cookieParser());
-
-// Create a database variable outside of the database connection callback to reuse the connection pool in your app.
-var db;
-
-// Connect to the database before starting the application server. 
-
-// Use environment variable to get database url (doesn't work on local environment)
-//mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
-
-var mongodbURI;
-if (process.env.ENVIRONMENT == 'production') {
-  mongodbURI = process.env.MONGODB_URI;
-}
-else {
-  mongodbURI = "mongodb://heroku_57rvbrlm:nhct4o3svduopt5nsc6dhohe5s@ds127604.mlab.com:27604/heroku_57rvbrlm";
-}
-mongodb.MongoClient.connect(mongodbURI, function (err, database) {
-  if (err) {
-    console.log(err);
-    process.exit(1);
+  else {
+    googleConfig = {
+      clientId: '264687752532-odanf2qa1m4qoas6ltn2q26a6qbc6juf.apps.googleusercontent.com', // e.g. asdfghjkljhgfdsghjk.apps.googleusercontent.com
+      clientSecret: 'p7ur_JgYLWls80AcSKnRXOsR', // e.g. _ASDFA%DFASDFASDFASD#FAD-
+      redirect: 'http://localhost:8080/api/auth/google/callback' // this must match your google api settings
+    };
   }
 
-  // Save database object from the callback for reuse.
-  db = database;
-  console.log("Database connection ready");
+  const defaultScope = [
+    'https://www.googleapis.com/auth/plus.me',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+  ];
 
-  // Initialize the app.
-  var server = app.listen(process.env.PORT || 8080, function () {
-    var port = server.address().port;
-    console.log("App now running on port", port);
+  var googleutils = {
+    /*************/
+    /** HELPERS **/
+    /*************/
+
+    createConnection: function() {
+      return new google.auth.OAuth2(
+          googleConfig.clientId,
+          googleConfig.clientSecret,
+          googleConfig.redirect
+      );
+    },
+
+    getConnectionUrl: function(auth) {
+      return auth.generateAuthUrl({
+        access_type: 'offline',
+        prompt: 'consent',
+        scope: defaultScope
+      });
+    },
+
+    getGooglePlusApi: function(auth) {
+      return google.plus({ version: 'v1', auth });
+    },
+
+    /**********/
+    /** MAIN **/
+    /**********/
+
+    /**
+     * Part 1: Create a Google URL and send to the client to log in the user.
+     */
+    urlGoogle: function() {
+      const auth = this.createConnection();
+      const url = this.getConnectionUrl(auth);
+      return url;
+    },
+
+    /**
+     * Part 2: Take the "code" parameter which Google gives us once when the user logs in, then get the user's email and id.
+     */
+    // getGoogleAccountFromCode: function (code) {
+    //   const data = await auth.getToken(code);
+    //   const tokens = data.tokens;
+    //   const auth = createConnection();
+    //   auth.setCredentials(tokens);
+    //   const plus = getGooglePlusApi(auth);
+    //   const me = await plus.people.get({userId: 'me'});
+    //   const userGoogleId = me.data.id;
+    //   const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+    //   return {
+    //     id: userGoogleId,
+    //     email: userGoogleEmail,
+    //     tokens: tokens,
+    //   };
+    // }
+    getGoogleAccountFromCode: async function (code) {
+      const auth = await this.createConnection();
+      const data = await auth.getToken(code);
+      const tokens = data.tokens;
+      auth.setCredentials(tokens);
+      const plus = this.getGooglePlusApi(auth);
+      const me = await plus.people.get({userId: 'me'});
+      const userGoogleId = me.data.id;
+      const userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+      console.log(me.data);
+      const displayName =  me.data.displayName;
+      const image =  me.data.image;
+      return {
+        id: userGoogleId,
+        email: userGoogleEmail,
+        tokens: tokens,
+        displayName: displayName,
+        image: image
+      };
+    }
+  };
+
+  var CONTRIBUTIONS_COLLECTION = "contributions";
+  var USERS_COLLECTION = "users";
+
+  var ERROR_CONTRIBUTION_OK = 0;
+  var ERROR_CONTRIBUTION_MISSING_PARAMS = -1;
+  var ERROR_CONTRIBUTION_URL_OR_TEXT = -2;
+  var ERROR_CONTRIBUTION_URL_EXISTS = -3;
+
+  var app = express();
+  app.use(express.static(__dirname + "/public"));
+  app.use(bodyParser.json());
+  app.use(cookieParser());
+
+  // Create a database variable outside of the database connection callback to reuse the connection pool in your app.
+  var db;
+
+  // Connect to the database before starting the application server. 
+
+  // Use environment variable to get database url (doesn't work on local environment)
+  //mongodb.MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
+
+  var mongodbURI;
+  if (process.env.ENVIRONMENT == 'production') {
+    mongodbURI = process.env.MONGODB_URI;
+  }
+  else {
+    mongodbURI = "mongodb://heroku_57rvbrlm:nhct4o3svduopt5nsc6dhohe5s@ds127604.mlab.com:27604/heroku_57rvbrlm";
+  }
+  mongodb.MongoClient.connect(mongodbURI, function (err, database) {
+    if (err) {
+      console.log(err);
+      process.exit(1);
+    }
+
+    // Save database object from the callback for reuse.
+    db = database;
+    console.log("Database connection ready");
+
+    // Initialize the app.
+    var server = app.listen(process.env.PORT || 8080, function () {
+      var port = server.address().port;
+      console.log("App now running on port", port);
+    });
   });
-});
 
 ///////////////////////////////////////////
 //
@@ -175,11 +165,38 @@ mongodb.MongoClient.connect(mongodbURI, function (err, database) {
 //
 ///////////////////////////////////////////
 
-// Generic error handler used by all endpoints.
-function handleError(res, reason, message, code) {
-  console.log("ERROR: " + reason);
-  res.status(code || 500).json({"error": message});
-}
+  // Generic error handler used by all endpoints.
+  function handleError(res, reason, message, code) {
+    console.log("ERROR: " + reason);
+    res.status(code || 500).json({"error": message});
+  }
+
+  function isObjectId(value) {
+    try {
+        const { ObjectId } = mongoose.Types;
+        const asString = value.toString(); // value is either ObjectId or string or anything
+        const asObjectId = new ObjectId(asString);
+        const asStringifiedObjectId = asObjectId.toString();
+        return asString === asStringifiedObjectId;
+      } catch (error) {
+        return false;
+      }
+  }
+
+  function isAuthTokenValid(res, token, callback) {
+    console.log("Checking Auth Token "+token);
+    db.collection(USERS_COLLECTION).findOne({ "tokens.access_token": token }, function(err, doc) {
+      if (err) {
+        handleError(res, "Unauthorized", "Failed to authenticate token", 401);
+      } else {
+        if (doc) {
+          callback(doc._id);
+        } else {
+          handleError(res, "Unauthorized", "Failed to authenticate token", 401);
+        }
+      }
+    });
+  }
 
 ///////////////////////////////////////////
 //
@@ -459,21 +476,6 @@ app.delete("/api/contributions/:id", function(req, res) {
 // USERS
 //
 ///////////////////////////////////////////
-
-  function isAuthTokenValid(res, token, callback) {
-    console.log("Checking Auth Token "+token);
-    db.collection(USERS_COLLECTION).findOne({ "tokens.access_token": token }, function(err, doc) {
-      if (err) {
-        handleError(res, "Unauthorized", "Failed to authenticate token", 401);
-      } else {
-        if (doc) {
-          callback(doc._id);
-        } else {
-          handleError(res, "Unauthorized", "Failed to authenticate token", 401);
-        }
-      }
-    });
-  }
 
   // Gets the url to login with Google
   app.get("/api/users/login-url", function(req, res) {
