@@ -821,7 +821,7 @@ const {google} = require('googleapis');
    */
 
   app.get("/api/contributions", function(req, res) {
-    db.collection(CONTRIBUTIONS_COLLECTION).find({}).toArray(function(err, docs) {
+    db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['points', 'desc']]}).toArray(function(err, docs) {
       if (err) {
         handleError(res, err.message, "Failed to get contributions.");
       } else {
