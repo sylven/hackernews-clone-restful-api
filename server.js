@@ -207,165 +207,91 @@ const {google} = require('googleapis');
 //
 ///////////////////////////////////////////
 
-app.get("/api/comments/:id", function(req, res) {
-  if (isObjectId(req.params.id)) {
-    db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
-        if (err) {
-          handleError(res, "Comment doesn't exist", "Comment not found", 404);
-        } else {
-          if (doc) {
-            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err2, doc2) {
-              if (err2) {
-                handleError(res, "Failed to get comment's author", "Comment not found");
-              } else {
-                if (doc2) {
-                  doc.authorName = doc2.displayName;
-                  res.status(200).json(doc);
-                } else {
-                  handleError(res, "Comment's author doesn't exist anymore", "Comment's author doesn't exist anymore", 500);
-                }
-              }
-            });
-          } else {
-            handleError(res, "Comment doesn't exist", "Comment not found", 404);
-          }
-        }
-      });
-  } else {
-    handleError(res, "Bad request", "Provided id is not valid", 400);
-  }
-});
-
-app.post("/api/contributions/:id/comments", function(req, res) {
-  var token = req.body.access_token;
-  console.log(req.body);
-  if (!token) {
-    handleError(res, "Bad request", "No token provided", 401);
-  }
-  else {
-    isAuthTokenValid(res, req.body.access_token, function(userId) {
-      console.log("userId "+userId);
-
-      if (isObjectId(req.params.id)) {
-        db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+  app.get("/api/comments/:id", function(req, res) {
+    if (isObjectId(req.params.id)) {
+      db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
           if (err) {
-            handleError(res, err.message, "Contribution doesn't exist", 404);
+            handleError(res, "Comment doesn't exist", "Comment not found", 404);
           } else {
-            if (!doc) {
-              handleError(res, "Not found", "Contribution doesn't exist", 404);
+            if (doc) {
+              db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err2, doc2) {
+                if (err2) {
+                  handleError(res, "Failed to get comment's author", "Comment not found");
+                } else {
+                  if (doc2) {
+                    doc.authorName = doc2.displayName;
+                    res.status(200).json(doc);
+                  } else {
+                    handleError(res, "Comment's author doesn't exist anymore", "Comment's author doesn't exist anymore", 500);
+                  }
+                }
+              });
             } else {
-              // All good
-              var newComment = {};
-              newComment.contributionId = req.params.id;
-              newComment.createdDate = new Date();
-              newComment.points = 1;
-              newComment.replies = 0;
-
-              if (!req.body.text) {
-                handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-              } else {
-                newComment.text = req.body.text;
-                newComment.authorId = userId.toString();
-                db.collection(COMMENTS_COLLECTION).insertOne(newComment, function(err2, doc2) {
-                  if (err2) {
-                    handleError(res, err2.message, "Failed to create new comment.");
-                  }
-                  else {
-                    // Update user points
-                    db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
-                      if (err3) {
-                        handleError(res, err3.message, "User doesn't exist", 404);
-                      } else {
-                        doc3.points = doc3.points+1;
-                        db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
-                          if (err4) {
-                            handleError(res, err4.message, "Failed to update user");
-                          } else {
-                            // Update contribution comments
-                            db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
-                              if (err5) {
-                                handleError(res, err5.message, "Contribution doesn't exist", 404);
-                              } else {
-                                doc5.comments = doc5.comments+1;
-                                db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
-                                  if (err6) {
-                                    handleError(res, err6.message, "Failed to update contribution");
-                                  } else {
-                                    res.status(201).json(doc2.ops[0]);
-                                  }
-                                });
-                              }
-                            });
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
-              }
+              handleError(res, "Comment doesn't exist", "Comment not found", 404);
             }
           }
         });
-      } else {
-        handleError(res, "Bad request", "Provided id is not valid", 400);
-      }
-    });
-  }
-});
+    } else {
+      handleError(res, "Bad request", "Provided id is not valid", 400);
+    }
+  });
 
-app.delete("/api/comments/:id", function(req, res) {
-  if (!req.body.access_token) {
-    handleError(res, "Unauthorized", "Authentication token was not provided", 401);
-  }
-  else {
-    isAuthTokenValid(res, req.body.access_token, function(userId) {
-      console.log("userId "+userId);
-      if (isObjectId(req.params.id)) {
-        db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
-          if (err) {
-            handleError(res, err.message, "Comment doesn't exist", 404);
-          } else {
-            if (!doc) {
-              handleError(res, "Not found", "Comment doesn't exist", 404);
+  app.post("/api/contributions/:id/comments", function(req, res) {
+    var token = req.body.access_token;
+    console.log(req.body);
+    if (!token) {
+      handleError(res, "Bad request", "No token provided", 401);
+    }
+    else {
+      isAuthTokenValid(res, req.body.access_token, function(userId) {
+        console.log("userId "+userId);
+
+        if (isObjectId(req.params.id)) {
+          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Contribution doesn't exist", 404);
             } else {
-              if (doc.authorId.toString() != userId) {
-                handleError(res, "Unauthorized", "This comment doesn't belong to you", 401);
+              if (!doc) {
+                handleError(res, "Not found", "Contribution doesn't exist", 404);
               } else {
-                const commentPoints = doc.points;
-                const contributionId = doc.contributionId;
-                const commentReplies = doc.replies;
-                db.collection(COMMENTS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
-                  console.log(result);
-                  if (err) {
-                    handleError(res, err.message, "Failed to delete comment");
-                  } else {
-                    if (result.deletedCount == 0) {
-                      handleError(res, "Not found", "Comment not found", 404);
-                    } else {
-                      // TODO: Delete all sub comments?
+                // All good
+                var newComment = {};
+                newComment.contributionId = req.params.id;
+                newComment.createdDate = new Date();
+                newComment.points = 1;
+                newComment.replies = 0;
 
-
-                      // Update user and contribution
+                if (!req.body.text) {
+                  handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+                } else {
+                  newComment.text = req.body.text;
+                  newComment.authorId = userId.toString();
+                  db.collection(COMMENTS_COLLECTION).insertOne(newComment, function(err2, doc2) {
+                    if (err2) {
+                      handleError(res, err2.message, "Failed to create new comment.");
+                    }
+                    else {
+                      // Update user points
                       db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
                         if (err3) {
                           handleError(res, err3.message, "User doesn't exist", 404);
                         } else {
-                          doc3.points = doc3.points-commentPoints;
+                          doc3.points = doc3.points+1;
                           db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
                             if (err4) {
                               handleError(res, err4.message, "Failed to update user");
                             } else {
                               // Update contribution comments
-                              db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(contributionId) }, function(err5, doc5) {
+                              db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
                                 if (err5) {
                                   handleError(res, err5.message, "Contribution doesn't exist", 404);
                                 } else {
-                                  doc5.comments = doc5.comments-1-commentReplies;
-                                  db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(contributionId)}, doc5, function(err6, doc6) {
+                                  doc5.comments = doc5.comments+1;
+                                  db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
                                     if (err6) {
                                       handleError(res, err6.message, "Failed to update contribution");
                                     } else {
-                                      res.status(204).end();
+                                      res.status(201).json(doc2.ops[0]);
                                     }
                                   });
                                 }
@@ -375,18 +301,92 @@ app.delete("/api/comments/:id", function(req, res) {
                         }
                       });
                     }
-                  }
-                });
+                  });
+                }
               }
             }
-          }
-        });
-      } else {
-        handleError(res, "Bad request", "Provided id is not valid", 400);
-      }
-    });
-  }
-});
+          });
+        } else {
+          handleError(res, "Bad request", "Provided id is not valid", 400);
+        }
+      });
+    }
+  });
+
+  app.delete("/api/comments/:id", function(req, res) {
+    if (!req.body.access_token) {
+      handleError(res, "Unauthorized", "Authentication token was not provided", 401);
+    }
+    else {
+      isAuthTokenValid(res, req.body.access_token, function(userId) {
+        console.log("userId "+userId);
+        if (isObjectId(req.params.id)) {
+          db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Comment doesn't exist", 404);
+            } else {
+              if (!doc) {
+                handleError(res, "Not found", "Comment doesn't exist", 404);
+              } else {
+                if (doc.authorId.toString() != userId) {
+                  handleError(res, "Unauthorized", "This comment doesn't belong to you", 401);
+                } else {
+                  const commentPoints = doc.points;
+                  const contributionId = doc.contributionId;
+                  const commentReplies = doc.replies;
+                  db.collection(COMMENTS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
+                    console.log(result);
+                    if (err) {
+                      handleError(res, err.message, "Failed to delete comment");
+                    } else {
+                      if (result.deletedCount == 0) {
+                        handleError(res, "Not found", "Comment not found", 404);
+                      } else {
+                        // TODO: Delete all sub comments?
+
+
+                        // Update user and contribution
+                        db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+                          if (err3) {
+                            handleError(res, err3.message, "User doesn't exist", 404);
+                          } else {
+                            doc3.points = doc3.points-commentPoints;
+                            db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                              if (err4) {
+                                handleError(res, err4.message, "Failed to update user");
+                              } else {
+                                // Update contribution comments
+                                db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(contributionId) }, function(err5, doc5) {
+                                  if (err5) {
+                                    handleError(res, err5.message, "Contribution doesn't exist", 404);
+                                  } else {
+                                    doc5.comments = doc5.comments-1-commentReplies;
+                                    db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(contributionId)}, doc5, function(err6, doc6) {
+                                      if (err6) {
+                                        handleError(res, err6.message, "Failed to update contribution");
+                                      } else {
+                                        res.status(204).end();
+                                      }
+                                    });
+                                  }
+                                });
+                              }
+                            });
+                          }
+                        });
+                      }
+                    }
+                  });
+                }
+              }
+            }
+          });
+        } else {
+          handleError(res, "Bad request", "Provided id is not valid", 400);
+        }
+      });
+    }
+  });
 
 ///////////////////////////////////////////
 //
