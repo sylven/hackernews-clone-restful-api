@@ -395,9 +395,7 @@ const {google} = require('googleapis');
 ///////////////////////////////////////////
 
   app.post("/api/contributions/:id/votes", function(req, res) {
-    var token = req.body.access_token;
-    console.log(req.body);
-    if (!token) {
+    if (!req.body.access_token) {
       handleError(res, "Bad request", "No token provided", 401);
     }
     else {
@@ -415,14 +413,14 @@ const {google} = require('googleapis');
                 // Check if user already upvoted
                 console.log("authorId "+userId);
                 console.log("contributionId "+doc._id.toString());
-                db.collection(VOTES_COLLECTION).find({$and:[{authorId: userId},{contributionId: req.params.id}]}, function(findVoteError, findVoteDoc) {
+                db.collection(VOTES_COLLECTION).findOne({"$and":[{"authorId": userId.toString()},{"contributionId": req.params.id}]}, function(findVoteError, findVoteDoc) {
                   if (findVoteError) {
                     handleError(res, findVoteError.message, "Error trying to check for existing vote");
                   } else {
                     if (findVoteDoc) {
+                      console.log(findVoteDoc);
                       handleError(res, "Vote found", "Vote already exists", 302);
                     } else {
-                      console.log(findVoteDoc);
                       // All good
                       var newVote = {};
                       newVote.contributionId = req.params.id;
