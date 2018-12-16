@@ -235,6 +235,29 @@ const {google} = require('googleapis');
     }
   });
 
+  app.get("/api/contributions/:id/comments", function(req, res) {
+    if (isObjectId(req.params.id)) {
+      db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "Contribution doesn't exist", 404);
+        } else {
+          if (!doc) {
+            handleError(res, "Not found", "Contribution doesn't exist", 404);
+          } else {
+            db.collection(COMMENTS_COLLECTION).find({ contributionId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+              if (err2) {
+                handleError(res, err2.message, "Failed to get comments.");
+              } else {
+                res.status(200).json(docs);  
+              }
+            });
+          }
+        }
+      });
+    } else {
+      handleError(res, "Bad request", "Provided id is not valid", 400);
+    }
+  });
   app.delete("/api/comments/:id", function(req, res) {
     if (!req.body.access_token) {
       handleError(res, "Unauthorized", "Authentication token was not provided", 401);
