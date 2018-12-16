@@ -1057,8 +1057,8 @@ const {google} = require('googleapis');
    *    GET: find all comments of the logged in user
    */
   app.get("/api/users/:id/comments", function(req, res) {
-    if (isObjectId(userId)) {
-      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+    if (isObjectId(req.params.id)) {
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
         if (err) {
           handleError(res, err.message, "User doesn't exist", 404);
         } else {
@@ -1084,8 +1084,8 @@ const {google} = require('googleapis');
    *    GET: find all contributions of the logged in user
    */
   app.get("/api/users/:id/contributions", function(req, res) {
-    if (isObjectId(userId)) {
-      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+    if (isObjectId(req.params.id)) {
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
         if (err) {
           handleError(res, err.message, "User doesn't exist", 404);
         } else {
