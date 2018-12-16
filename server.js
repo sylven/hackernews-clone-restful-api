@@ -390,6 +390,102 @@ app.delete("/api/comments/:id", function(req, res) {
 
 ///////////////////////////////////////////
 //
+// VOTES
+//
+///////////////////////////////////////////
+
+  app.post("/api/contributions/:id/votes", function(req, res) {
+    var token = req.body.access_token;
+    console.log(req.body);
+    if (!token) {
+      handleError(res, "Bad request", "No token provided", 401);
+    }
+    else {
+      isAuthTokenValid(res, req.body.access_token, function(userId) {
+        console.log("userId "+userId);
+
+        if (isObjectId(req.params.id)) {
+          db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Contribution doesn't exist", 404);
+            } else {
+              if (!doc) {
+                handleError(res, "Not found", "Contribution doesn't exist", 404);
+              } else {
+                // Check if user already upvoted
+                console.log("authorId "+userId);
+                console.log("contributionId "+doc._id.toString());
+                db.collection(VOTES_COLLECTION).find({$and:[{authorId: userId},{contributionId: req.params.id}]}, function(findVoteError, findVoteDoc) {
+                  if (findVoteError) {
+                    handleError(res, findVoteError.message, "Error trying to check for existing vote");
+                  } else {
+                    if (findVoteDoc) {
+                      handleError(res, "Vote found", "Vote already exists", 302);
+                    } else {
+                      console.log(findVoteDoc);
+                      // All good
+                      var newVote = {};
+                      newVote.contributionId = req.params.id;
+                      newVote.createdDate = new Date();
+
+                      if (!req.body.text) {
+                        handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+                      } else {
+                        newVote.authorId = userId.toString();
+                        db.collection(VOTES_COLLECTION).insertOne(newVote, function(err2, doc2) {
+                          if (err2) {
+                            handleError(res, err2.message, "Failed to create new comment.");
+                          }
+                          else {
+                            // Update user points
+                            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err3, doc3) {
+                              if (err3) {
+                                handleError(res, err3.message, "User doesn't exist", 404);
+                              } else {
+                                doc3.points = doc3.points+1;
+                                db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(doc.authorId)}, doc3, function(err4, doc4) {
+                                  if (err4) {
+                                    handleError(res, err4.message, "Failed to update user");
+                                  } else {
+                                    // Update contribution votes
+                                    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
+                                      if (err5) {
+                                        handleError(res, err5.message, "Contribution doesn't exist", 404);
+                                      } else {
+                                        doc5.points = doc5.points+1;
+                                        db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
+                                          if (err6) {
+                                            handleError(res, err6.message, "Failed to update contribution");
+                                          } else {
+                                            res.status(201).json(doc2.ops[0]);
+                                          }
+                                        });
+                                      }
+                                    });
+                                  }
+                                });
+                              }
+                            });
+                          }
+                        });
+                      }
+
+                    }
+                  }
+                });
+
+              }
+            }
+          });
+        } else {
+          handleError(res, "Bad request", "Provided id is not valid", 400);
+        }
+      });
+    }
+  });
+
+///////////////////////////////////////////
+//
 // CONTRIBUTIONS
 //
 ///////////////////////////////////////////
