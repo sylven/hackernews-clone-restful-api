@@ -1057,13 +1057,54 @@ const {google} = require('googleapis');
    *    GET: find all comments of the logged in user
    */
   app.get("/api/users/:id/comments", function(req, res) {
-    db.collection(COMMENTS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err, docs) {
-      if (err) {
-        handleError(res, err.message, "Failed to get contributions.");
-      } else {
-        res.status(200).json(docs);  
-      }
-    });
+    if (isObjectId(userId)) {
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "User doesn't exist", 404);
+        } else {
+          if (!doc) {
+            handleError(res, "Not found", "User doesn't exist", 404);
+          } else {
+            db.collection(COMMENTS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+              if (err2) {
+                handleError(res, err2.message, "Failed to get comments.");
+              } else {
+                res.status(200).json(docs);  
+              }
+            });
+          }
+        }
+      });
+    } else {
+      handleError(res, "Bad request", "Provided id is not valid", 400);
+    }
+  });
+
+  /*  "/users/:id/contributions"
+   *    GET: find all contributions of the logged in user
+   */
+  app.get("/api/users/:id/contributions", function(req, res) {
+    if (isObjectId(userId)) {
+      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err, doc) {
+        if (err) {
+          handleError(res, err.message, "User doesn't exist", 404);
+        } else {
+          if (!doc) {
+            handleError(res, "Not found", "User doesn't exist", 404);
+          } else {
+            db.collection(CONTRIBUTIONS_COLLECTION).find({ authorId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+              if (err2) {
+                handleError(res, err2.message, "Failed to get contributions.");
+              } else {
+                res.status(200).json(docs);  
+              }
+            });
+          }
+        }
+      });
+    } else {
+      handleError(res, "Bad request", "Provided id is not valid", 400);
+    }
   });
 
   // Gets the url to login with Google
