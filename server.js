@@ -1235,12 +1235,14 @@ const {google} = require('googleapis');
           handleError(res, err.message, "Failed to get user", 404);
         } else {
           if (doc) {
+            console.log(doc);
             let response = {};
             response.id = req.params.id;
             response.displayName = doc.displayName;
             response.about = doc.about;
             response.createdDate = doc.createdDate;
             response.points = doc.points;
+            response.image = doc.image.url;
             res.status(200).json(response);
           } else {
             handleError(res, "Not found", "Failed to get user", 404);
