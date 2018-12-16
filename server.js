@@ -203,6 +203,89 @@ const {google} = require('googleapis');
 
 ///////////////////////////////////////////
 //
+// REPLIES
+//
+///////////////////////////////////////////
+
+  app.post("/api/comments/:id/replies", function(req, res) {
+    var token = req.body.access_token;
+    console.log(req.body);
+    if (!token) {
+      handleError(res, "Bad request", "No token provided", 401);
+    }
+    else {
+      isAuthTokenValid(res, req.body.access_token, function(userId) {
+        console.log("userId "+userId);
+
+        if (isObjectId(req.params.id)) {
+          db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
+            if (err) {
+              handleError(res, err.message, "Comment doesn't exist", 404);
+            } else {
+              if (!doc) {
+                handleError(res, "Not found", "Comment doesn't exist", 404);
+              } else {
+                // All good
+                var newReply = {};
+                newReply.commentId = req.params.id;
+                newReply.createdDate = new Date();
+                newReply.points = 1;
+                newReply.replies = 0;
+
+                if (!req.body.text) {
+                  handleError(res, "Invalid reply input: Must provide all parameters", "Must provide all parameters.", 400);
+                } else {
+                  newReply.text = req.body.text;
+                  newReply.authorId = userId.toString();
+                  db.collection(REPLIES_COLLECTION).insertOne(newReply, function(err2, doc2) {
+                    if (err2) {
+                      handleError(res, err2.message, "Failed to create new reply.");
+                    }
+                    else {
+                      // Update user points
+                      db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+                        if (err3) {
+                          handleError(res, err3.message, "User doesn't exist", 404);
+                        } else {
+                          doc3.points = doc3.points+1;
+                          db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                            if (err4) {
+                              handleError(res, err4.message, "Failed to update user");
+                            } else {
+                              // Update comment comments
+                              db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
+                                if (err5) {
+                                  handleError(res, err5.message, "Comment doesn't exist", 404);
+                                } else {
+                                  doc5.comments = doc5.comments+1;
+                                  db.collection(COMMENTS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
+                                    if (err6) {
+                                      handleError(res, err6.message, "Failed to update comment");
+                                    } else {
+                                      res.status(201).json(doc2.ops[0]);
+                                    }
+                                  });
+                                }
+                              });
+                            }
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              }
+            }
+          });
+        } else {
+          handleError(res, "Bad request", "Provided id is not valid", 400);
+        }
+      });
+    }
+  });
+
+///////////////////////////////////////////
+//
 // COMMENTS
 //
 ///////////////////////////////////////////
@@ -262,7 +345,7 @@ const {google} = require('googleapis');
                 newComment.replies = 0;
 
                 if (!req.body.text) {
-                  handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
+                  handleError(res, "Invalid comment input: Must provide all parameters", "Must provide all parameters.", 400);
                 } else {
                   newComment.text = req.body.text;
                   newComment.authorId = userId.toString();
