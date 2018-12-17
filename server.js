@@ -1082,6 +1082,8 @@ const {google} = require('googleapis');
                     }
                     else if (response == ERROR_CONTRIBUTION_OK) {
                       var updatedDoc = doc;
+                      delete updatedDoc.title;
+                      updatedDoc.title = req.body.title;
                       delete updatedDoc.text;
                       delete updatedDoc.url;
                       updatedDoc.modificationDate = new Date();

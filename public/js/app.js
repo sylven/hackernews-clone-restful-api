@@ -267,7 +267,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response.data;
                 }, function(response){
-                    $("#error_messages").html("Error: "+response.data.error).show();
+                    //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 })
         }
