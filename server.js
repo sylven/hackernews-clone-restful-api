@@ -303,13 +303,15 @@ const {google} = require('googleapis');
                 } else {
                   let collectionName;
                   let commentedItemId;
-                  if (doc.contributionId) {
-                    collectionName = CONTRIBUTIONS_COLLECTION;
-                    commentedItemId = doc.contributionId;
-                  } else if (doc.parentCommentId) {
+                  
+                  if (doc.parentCommentId) {
                     collectionName = COMMENTS_COLLECTION;
                     commentedItemId = doc.parentCommentId;
+                  } else if (doc.contributionId) {
+                    collectionName = CONTRIBUTIONS_COLLECTION;
+                    commentedItemId = doc.contributionId;
                   }
+
                   const commentPoints = doc.points;
                   //const commentComments = doc.comments;
                   db.collection(COMMENTS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
@@ -464,6 +466,7 @@ const {google} = require('googleapis');
                 // All good
                 var newComment = {};
                 newComment.parentCommentId = req.params.id;
+                newComment.contributionId = doc.contributionId;
                 newComment.createdDate = new Date();
                 newComment.points = 1;
                 newComment.comments = 0;
