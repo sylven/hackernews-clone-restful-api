@@ -1,19 +1,34 @@
-<nav class="navbar navbar-default navbar-fixed-top">
-    <div class="container">
-        <div class="navbar-header">
-            <div class="navbar-brand" href="#/">Hacker News</div>
+<header>
+  <nav class="navbar navbar-expand-md fixed-top" style="background-color: #ff6600;a:hover:black!important">
+    <img src="https://news.ycombinator.com/y18.gif" style="border:1px solid white" />
+    <a class="navbar-brand" href="#/" style="font-weight:bold;margin-left:10px;">Hacker News</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item active">
+          <a class="nav-link" href="#/newest">new</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#/ask">ask</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#/threads">threads</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#/submit">submit</a>
+        </li>
+      </ul>
+      <div class="form-inline mt-2 mt-md-0">
+        <a ng-show="{{authToken === undefined}}" href="{{ loginUrl }}"><button class="btn btn-dark btn-outline my-2 my-sm-0">Login</button></a>
+        <div ng-show="{{authToken !== undefined}}">
+            <img ng-show="{{userImageUrl !== undefined}}" src="{{ userImageUrl }}" />
+            <a href="#/user/{{userId}}">{{userDisplayName}}</a> ({{userPoints}})&nbsp;
+            <a href="" ng-click="logout()"><button class="btn btn-dark btn-outline my-2 my-sm-0">Logout</button></a>
         </div>
-        <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-                <li class="active"><a href="#/">Home</a></li>
-                <li class=""><a href="#/newest">Newest</a></li>
-                <li class=""><a href="#/ask">Ask</a></li>
-                <li ng-show="{{authToken === undefined}}"><a href="{{ loginUrl }}">Login</a></li>
-                <li ng-show="{{authToken !== undefined}}"><a href="#/profile">Profile</a></li>
-                <li ng-show="{{authToken !== undefined}}"><a href="" ng-click="logout()">Salir</a></li>
-            </ul>
-        </div>
+      </div>
     </div>
-</nav>
-<div style="color:red" id="error_messages"></div>
-<div style="color:green" id="notice_messages"></div>
+  </nav>
+</header>
+

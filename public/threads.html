@@ -1,0 +1,32 @@
+<div ng-include="'nav.html'"></div>
+<div class="container">
+  <div class = "row">
+    <div class="col-md-6">
+      <h2>
+        Threads
+      </h2>
+    </div>
+    <div class="col-md-3">
+    </div>
+    <div class="col-md-2">
+      <!--<a href="#/new/contribution"><button class="btn btn-default">Create new contribution</button></a>-->
+    </div>
+    <div class="col-md-1">
+    </div>
+  </div>
+  <div class="container">
+    <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
+    <table class="table table-hover">
+      <tbody>
+        <tr ng-repeat="(key, contribution) in contributions | orderBy:'createdDate'" style="cursor:pointer">
+          <td>
+            <div id="item-footer" style="font-size:12px;color:#828282;">{{ contribution.points }} points by <a href="#/user/{{userDisplayName}}">{{userDisplayName}}</a> {{contribution.createdDate}} <span ng-show="{{contribution.contributionId !== undefined}}" >| <a href="#/contribution/{{contribution.contributionId}}">Visit contribution</a></span></div>
+             </div> <a ng-show="{{contribution.url !== undefined}}" ng-href="{{contribution.url}}">{{ contribution.title }}</a><a ng-show="{{contribution.url === undefined}}" ng-href="#/contribution/{{contribution._id}}">{{ contribution.title }}</a> <a ng-show="{{contribution.url !== undefined}}" href="{{contribution.url}}" style="font-size: 12px;color:#828282;">({{contribution.url}})</a>
+             {{contribution.text}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

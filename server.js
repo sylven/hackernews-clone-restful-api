@@ -235,6 +235,37 @@ const {google} = require('googleapis');
     }
   });
 
+  function getChildComments(id, callback) {
+    db.collection(COMMENTS_COLLECTION).find({ parentCommentId: id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+      if (err2) {
+        handleError(res, err2.message, "Failed to get comments.");
+      } else {
+        //console.log("getChildComments with id "+id);
+
+        let promises = [];
+        docs.forEach((value, index, array) => {
+          
+            //console.log(value);
+            //let childComments = await getChildComments(value._id.toString());
+            //docs.comments = childComments;
+            promises.push(new Promise((resolve, reject) => {
+              //setTimeout(resolve, 100, "foo");
+              getChildComments(value._id.toString(), function(response) {
+                value.childComments = response;
+                //console.log(value);
+                resolve(value);
+              })
+            }))
+        });
+
+        Promise.all(promises).then(values => {
+          //console.log(values);
+          callback(values);
+        });
+      }
+    });
+  }
+
   app.get("/api/contributions/:id/comments", function(req, res) {
     if (isObjectId(req.params.id)) {
       db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
@@ -244,11 +275,29 @@ const {google} = require('googleapis');
           if (!doc) {
             handleError(res, "Not found", "Contribution doesn't exist", 404);
           } else {
-            db.collection(COMMENTS_COLLECTION).find({ contributionId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+            
+            db.collection(COMMENTS_COLLECTION).find({"$and":[{"contributionId": req.params.id},{ "parentCommentId" : { "$exists" : false }}]}, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
               if (err2) {
                 handleError(res, err2.message, "Failed to get comments.");
               } else {
-                res.status(200).json(docs);  
+                let promises = [];
+                docs.forEach((value, index, array) => {
+                    //console.log(value);
+                    //let childComments = await getChildComments(value._id.toString());
+                    //docs.comments = childComments;
+                    promises.push(new Promise((resolve, reject) => {
+                      //setTimeout(resolve, 100, "foo");
+                      getChildComments(value._id.toString(), function(response) {
+                        value.childComments = response;
+                        resolve(value);
+                      })
+                    }))
+                });
+
+                Promise.all(promises).then(values => {
+                  console.log(values);
+                  res.status(200).json(docs);
+                });
               }
             });
           }
@@ -303,13 +352,15 @@ const {google} = require('googleapis');
                 } else {
                   let collectionName;
                   let commentedItemId;
-                  if (doc.contributionId) {
-                    collectionName = CONTRIBUTIONS_COLLECTION;
-                    commentedItemId = doc.contributionId;
-                  } else if (doc.parentCommentId) {
+                  
+                  if (doc.parentCommentId) {
                     collectionName = COMMENTS_COLLECTION;
                     commentedItemId = doc.parentCommentId;
+                  } else if (doc.contributionId) {
+                    collectionName = CONTRIBUTIONS_COLLECTION;
+                    commentedItemId = doc.contributionId;
                   }
+
                   const commentPoints = doc.points;
                   //const commentComments = doc.comments;
                   db.collection(COMMENTS_COLLECTION).deleteOne({_id: new ObjectID(req.params.id)}, function(err, result) {
@@ -464,6 +515,7 @@ const {google} = require('googleapis');
                 // All good
                 var newComment = {};
                 newComment.parentCommentId = req.params.id;
+                newComment.contributionId = doc.contributionId;
                 newComment.createdDate = new Date();
                 newComment.points = 1;
                 newComment.comments = 0;
@@ -639,47 +691,43 @@ const {google} = require('googleapis');
                       newVote.contributionId = req.params.id;
                       newVote.createdDate = new Date();
 
-                      if (!req.body.text) {
-                        handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
-                      } else {
-                        newVote.authorId = userId.toString();
-                        db.collection(VOTES_COLLECTION).insertOne(newVote, function(err2, doc2) {
-                          if (err2) {
-                            handleError(res, err2.message, "Failed to create new vote.");
-                          }
-                          else {
-                            // Update user points
-                            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err3, doc3) {
-                              if (err3) {
-                                handleError(res, err3.message, "User doesn't exist", 404);
-                              } else {
-                                doc3.points = doc3.points+1;
-                                db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(doc.authorId)}, doc3, function(err4, doc4) {
-                                  if (err4) {
-                                    handleError(res, err4.message, "Failed to update user");
-                                  } else {
-                                    // Update contribution votes
-                                    db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
-                                      if (err5) {
-                                        handleError(res, err5.message, "Contribution doesn't exist", 404);
-                                      } else {
-                                        doc5.points = doc5.points+1;
-                                        db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
-                                          if (err6) {
-                                            handleError(res, err6.message, "Failed to update contribution");
-                                          } else {
-                                            res.status(201).json(doc2.ops[0]);
-                                          }
-                                        });
-                                      }
-                                    });
-                                  }
-                                });
-                              }
-                            });
-                          }
-                        });
-                      }
+                      newVote.authorId = userId.toString();
+                      db.collection(VOTES_COLLECTION).insertOne(newVote, function(err2, doc2) {
+                        if (err2) {
+                          handleError(res, err2.message, "Failed to create new vote.");
+                        }
+                        else {
+                          // Update user points
+                          db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err3, doc3) {
+                            if (err3) {
+                              handleError(res, err3.message, "User doesn't exist", 404);
+                            } else {
+                              doc3.points = doc3.points+1;
+                              db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(doc.authorId)}, doc3, function(err4, doc4) {
+                                if (err4) {
+                                  handleError(res, err4.message, "Failed to update user");
+                                } else {
+                                  // Update contribution votes
+                                  db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
+                                    if (err5) {
+                                      handleError(res, err5.message, "Contribution doesn't exist", 404);
+                                    } else {
+                                      doc5.points = doc5.points+1;
+                                      db.collection(CONTRIBUTIONS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
+                                        if (err6) {
+                                          handleError(res, err6.message, "Failed to update contribution");
+                                        } else {
+                                          res.status(201).json(doc2.ops[0]);
+                                        }
+                                      });
+                                    }
+                                  });
+                                }
+                              });
+                            }
+                          });
+                        }
+                      });
 
                     }
                   }
@@ -727,47 +775,44 @@ const {google} = require('googleapis');
                       newVote.commentId = req.params.id;
                       newVote.createdDate = new Date();
 
-                      if (!req.body.text) {
-                        handleError(res, "Invalid comment input: Must provide all parameters", "Must provide all parameters.", 400);
-                      } else {
-                        newVote.authorId = userId.toString();
-                        db.collection(VOTES_COLLECTION).insertOne(newVote, function(err2, doc2) {
-                          if (err2) {
-                            handleError(res, err2.message, "Failed to create new vote.");
-                          }
-                          else {
-                            // Update user points
-                            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err3, doc3) {
-                              if (err3) {
-                                handleError(res, err3.message, "User doesn't exist", 404);
-                              } else {
-                                doc3.points = doc3.points+1;
-                                db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(doc.authorId)}, doc3, function(err4, doc4) {
-                                  if (err4) {
-                                    handleError(res, err4.message, "Failed to update user");
-                                  } else {
-                                    // Update comment votes
-                                    db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
-                                      if (err5) {
-                                        handleError(res, err5.message, "Comment doesn't exist", 404);
-                                      } else {
-                                        doc5.points = doc5.points+1;
-                                        db.collection(COMMENTS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
-                                          if (err6) {
-                                            handleError(res, err6.message, "Failed to update comment");
-                                          } else {
-                                            res.status(201).json(doc2.ops[0]);
-                                          }
-                                        });
-                                      }
-                                    });
-                                  }
-                                });
-                              }
-                            });
-                          }
-                        });
-                      }
+                      newVote.authorId = userId.toString();
+                      db.collection(VOTES_COLLECTION).insertOne(newVote, function(err2, doc2) {
+                        if (err2) {
+                          handleError(res, err2.message, "Failed to create new vote.");
+                        }
+                        else {
+                          // Update user points
+                          db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(doc.authorId) }, function(err3, doc3) {
+                            if (err3) {
+                              handleError(res, err3.message, "User doesn't exist", 404);
+                            } else {
+                              doc3.points = doc3.points+1;
+                              db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(doc.authorId)}, doc3, function(err4, doc4) {
+                                if (err4) {
+                                  handleError(res, err4.message, "Failed to update user");
+                                } else {
+                                  // Update comment votes
+                                  db.collection(COMMENTS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err5, doc5) {
+                                    if (err5) {
+                                      handleError(res, err5.message, "Comment doesn't exist", 404);
+                                    } else {
+                                      doc5.points = doc5.points+1;
+                                      db.collection(COMMENTS_COLLECTION).updateOne({_id: new ObjectID(req.params.id)}, doc5, function(err6, doc6) {
+                                        if (err6) {
+                                          handleError(res, err6.message, "Failed to update comment");
+                                        } else {
+                                          res.status(201).json(doc2.ops[0]);
+                                        }
+                                      });
+                                    }
+                                  });
+                                }
+                              });
+                            }
+                          });
+                        }
+                      });
+
 
                     }
                   }
@@ -821,7 +866,7 @@ const {google} = require('googleapis');
    */
 
   app.get("/api/contributions", function(req, res) {
-    db.collection(CONTRIBUTIONS_COLLECTION).find({}).toArray(function(err, docs) {
+    db.collection(CONTRIBUTIONS_COLLECTION).find({}, {"sort" : [['points', 'desc']]}).toArray(function(err, docs) {
       if (err) {
         handleError(res, err.message, "Failed to get contributions.");
       } else {
@@ -884,24 +929,27 @@ const {google} = require('googleapis');
               newContribution.text = req.body.text;
             }
             newContribution.authorId = userId.toString();
-            db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-              if (err) {
-                handleError(res, err.message, "Failed to create new contribution.");
-              }
-              else {
-                // Update user points
-                db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
-                  if (err3) {
-                    handleError(res, err3.message, "User doesn't exist", 404);
+            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+              if (err3) {
+                handleError(res, err3.message, "User doesn't exist", 404);
+              } else {
+                doc3.points = doc3.points+1;
+                db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                  if (err4) {
+                    handleError(res, err4.message, "Failed to update user");
                   } else {
-                    doc3.points = doc3.points+1;
-                    db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
-                      if (err4) {
-                        handleError(res, err4.message, "Failed to update user");
-                      } else {
+                    // TODO: User name shouldn't be copied here
+                    newContribution.authorName = doc3.displayName;
+                    db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+                      if (err) {
+                        handleError(res, err.message, "Failed to create new contribution.");
+                      }
+                      else {
+                        // Update user points
                         res.status(201).json(doc.ops[0]);
                       }
                     });
+                    
                   }
                 });
               }
@@ -1183,6 +1231,8 @@ const {google} = require('googleapis');
           updatedUser.tokens = response.tokens;
           delete updatedUser.image;
           updatedUser.image = response.image;
+          
+          res.cookie('user_id', userFound._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
 
           console.log("User object updated");
           console.log(updatedUser);
@@ -1190,6 +1240,7 @@ const {google} = require('googleapis');
             if (err3) {
               handleError(res, err3.message, "Failed to update user");
             } else {
+              //console.log(doc3);
               //res.status(201).json(response);
 
               // Redirect to base url
@@ -1213,6 +1264,7 @@ const {google} = require('googleapis');
             }
             else {
               //res.status(201).json(doc.ops[0]);
+              res.cookie('user_id', doc.ops[0]._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
 
               // Redirect to base url
               var newPath = req.originalUrl.split('api')[0];
@@ -1238,12 +1290,14 @@ const {google} = require('googleapis');
           handleError(res, err.message, "Failed to get user", 404);
         } else {
           if (doc) {
+            console.log(doc);
             let response = {};
             response.id = req.params.id;
             response.displayName = doc.displayName;
             response.about = doc.about;
             response.createdDate = doc.createdDate;
             response.points = doc.points;
+            response.image = doc.image.url;
             res.status(200).json(response);
           } else {
             handleError(res, "Not found", "Failed to get user", 404);
