@@ -853,7 +853,7 @@ const {google} = require('googleapis');
 //
 ///////////////////////////////////////////
 
-  function validateContributionData(contribution, callback) {
+  function validateContributionData(contribution, params, callback) {
     // Checks if the contribution has either an url or text
     if (!contribution.title || (!contribution.url && !contribution.text)) {
       callback(ERROR_CONTRIBUTION_MISSING_PARAMS);
@@ -866,7 +866,11 @@ const {google} = require('googleapis');
       if (contribution.url) {
         db.collection(CONTRIBUTIONS_COLLECTION).findOne({ url: contribution.url }, function(err, contributionFound) { 
           if (contributionFound) {
-            callback(ERROR_CONTRIBUTION_URL_EXISTS);
+            if (params.id && params.id == contributionFound._id) {
+              callback(ERROR_CONTRIBUTION_OK);
+            } else {
+              callback(ERROR_CONTRIBUTION_URL_EXISTS);
+            }
           }
           else {
             callback(ERROR_CONTRIBUTION_OK);
@@ -910,7 +914,7 @@ const {google} = require('googleapis');
         newContribution.points = 1;
         newContribution.comments = 0;
 
-        validateContributionData(req.body, function(response) {
+        validateContributionData(req.body, req.params, function(response) {
           if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
             handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
           }
@@ -1057,7 +1061,7 @@ const {google} = require('googleapis');
                 if (doc.authorId.toString() != userId) {
                   handleError(res, "Unauthorized", "This contribution doesn't belong to you", 401);
                 } else {
-                  validateContributionData(req.body, function(response) {
+                  validateContributionData(req.body, req.params, function(response) {
                     if (response == ERROR_CONTRIBUTION_MISSING_PARAMS) {
                       handleError(res, "Invalid contribution input: Must provide all parameters", "Must provide all parameters.", 400);
                     }
