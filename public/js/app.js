@@ -31,11 +31,11 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             .when("/threads", {
                 templateUrl: "threads.html",
                 controller: "ThreadsController",
-                resolve: {
-                    contributions: function(Contributions) {
+                /*resolve: {
+                    comments: function(Users) {
                         return Users.getThreads();
                     }
-                }
+                }*/
             })
             .when("/submit", {
                 controller: "NewContributionController",
@@ -270,21 +270,50 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
 
         var token = $cookies.get('access_token');
         $scope.saveContribution = function(contribution) {
-            Contributions.createContribution(token, contribution).then(function(doc) {
-                var contributionUrl = "/api/contribution/" + doc.data._id;
-                console.log("controller ok");
-                $location.path(contributionUrl);
-            }, function(response) {
-                //alert(response);
-                document.getElementById("error_messages").innerHTML = response.data.error;
-                console.log("controller error");
-                console.log(response);
-            });
+            console.log(contribution);
+            if (!contribution || !contribution.title || (!contribution.text && !contribution.url)) {
+                $("#error_messages").html("Please insert data").show();
+            } else if (contribution.title && contribution.text && contribution.url) {
+                $("#error_messages").html("You can only send a text or url").show();
+            } else {
+                Contributions.createContribution(token, contribution).then(function(doc) {
+                    var contributionUrl = "/api/contribution/" + doc.data._id;
+                    console.log("controller ok");
+                    $location.path(contributionUrl);
+                }, function(response) {
+                    //alert(response);
+                    $("#error_messages").html("Error: "+response.data.error).show();
+                    console.log("controller error");
+                    console.log(response);
+                });
+            }
         }
 
         $scope.authToken = $cookies.get('access_token');
         $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
+        Users.getLoginUrl().then(function(doc) {
+            $scope.loginUrl = doc.data.url;
+        }, function(response) {
+            //alert(response);
+            $("#error_messages").html(response.data.error);
+            $("#error_messages").display();
+            console.log(response);
+        });
+        $scope.logout = function() {
+            $cookies.remove('access_token');
+            $cookies.remove('user_display_name');
+            $cookies.remove('user_image');
+            $location.path("#/");
+        }
+    })
+    .controller("ThreadsController", function($scope, $cookies, $location, Contributions, Users) {
+        //$scope.contributions = comments.data;
+
+        $scope.authToken = $cookies.get('access_token');
+        $scope.userDisplayName = $cookies.get('user_display_name');
+        $scope.userImageUrl = $cookies.get('user_image');
+        $scope.userId = $cookies.get('user_id');
         Users.getLoginUrl().then(function(doc) {
             $scope.loginUrl = doc.data.url;
         }, function(response) {
@@ -296,8 +325,25 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $cookies.remove('access_token');
             $cookies.remove('user_display_name');
             $cookies.remove('user_image');
+            $cookies.remove('user_id');
             $location.path("#/");
         }
+        Users.getUser($scope.userId).then(function(doc) {
+            console.log(doc);
+            $scope.userPoints = doc.points;
+        }, function(response) {
+            //alert(response);
+            document.getElementById("error_messages").innerHTML = response.data.error;
+            console.log(response);
+        });
+        Users.getThreads($scope.userId).then(function(doc) {
+            console.log(doc);
+            $scope.contributions = doc;
+        }, function(response) {
+            //alert(response);
+            document.getElementById("error_messages").innerHTML = response.data.error;
+            console.log(response);
+        });
     })
     .controller("EditContributionController", function($scope, $cookies, $routeParams, Contributions, Users, $location) {
         Contributions.getContribution($routeParams.contributionId).then(function(doc) {
