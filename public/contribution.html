@@ -1,5 +1,6 @@
 <div ng-include="'nav.html'"></div>
 <div class="container">
+  <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
 
   <div class = "row">
     <div class="col-md-6">
@@ -10,7 +11,7 @@
     <div class="col-md-3">
     </div>
     <div class="col-md-2">
-      <a href="#/"><button style="margin-top:20px" class="btn btn-default" ng-click="deleteContribution(contribution._id)">Delete</button></a>
+      <a ng-if="mine" href="#/"><button style="margin-top:20px" class="btn btn-default" ng-click="deleteContribution(contribution._id)">Delete</button></a>
     </div>
     <div class="col-md-1">
     </div>
@@ -22,7 +23,7 @@
       <p ng-if="contribution.url">url: {{ contribution.url }} </p>
       <p ng-if="contribution.authorName">url: {{ contribution.authorName }} </p>
       <p>
-        <button style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">Edit</button>
+        <button ng-if="mine" style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">Edit</button>
         <a href="#/"><button style="margin-top:20px" class="btn btn-default">Back</button></a>
       </p>
     </div>

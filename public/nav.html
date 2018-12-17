@@ -24,7 +24,7 @@
         <a ng-show="{{authToken === undefined}}" href="{{ loginUrl }}"><button class="btn btn-dark btn-outline my-2 my-sm-0">Login</button></a>
         <div ng-show="{{authToken !== undefined}}">
             <img ng-show="{{userImageUrl !== undefined}}" src="{{ userImageUrl }}" />
-            <a href="/users/{{userId}}">{{userDisplayName}}</a> ({{userPoints}})&nbsp;
+            <a href="#/user/{{userId}}">{{userDisplayName}}</a> ({{userPoints}})&nbsp;
             <a href="" ng-click="logout()"><button class="btn btn-dark btn-outline my-2 my-sm-0">Logout</button></a>
         </div>
       </div>

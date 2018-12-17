@@ -15,6 +15,7 @@
     </div>
   </div>
   <div class="container">
+    <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
     <table class="table table-hover">
       <tbody>
         <tr ng-repeat="(key, contribution) in contributions | orderBy:'createdDate'" style="cursor:pointer">
