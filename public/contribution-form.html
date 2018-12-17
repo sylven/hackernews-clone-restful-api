@@ -1,5 +1,6 @@
 <div ng-include="'nav.html'"></div>
 <div class="container">
+  <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
 
   <div class="row" ng-hide="contribution._id">
     <div class="col-md-6">
@@ -15,15 +16,15 @@
       </p>
       <p>
         <label>Text</label>
-        <input id="text" class="form-control" type="text" ng-model="contribution.text" required>
+        <textarea id="text" rows="6" class="form-control" ng-model="contribution.text" required></textarea>
       </p>
       <p>
         <label>Url</label>
         <input id="url" class="form-control" type="text" ng-model="contribution.url" required>
       </p>
       <p>
-        <button style="margin-top:20px" class="btn btn-default" ng-click="saveContribution(contribution)">Save</button>
-        <button style="margin-top:20px" class="btn btn-default" ng-click="back()">Back</button>
+        <button style="margin-top:20px" class="btn btn-default" ng-click="saveContribution(contribution)">save</button>
+        <button style="margin-top:20px" class="btn btn-default" ng-click="back()">cancel</button>
       </p>
     </div>
   </div>
