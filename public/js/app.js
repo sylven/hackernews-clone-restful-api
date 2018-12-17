@@ -53,10 +53,11 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         this.getContributions = function() {
             return $http.get("/api/contributions").
                 then(function(response) {
+                    console.log(response);
                     return response;
                 }, function(response) {
                     //alert("Error finding contributions.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -66,7 +67,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response;
                 }, function(response) {
                     //alert("Error finding contributions.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -76,7 +77,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response;
                 }, function(response) {
                     //alert("Error finding contributions.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -98,7 +99,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                         $location.path(response.data.redirectUrl);
                     }
                     else {
-                        document.getElementById("error_messages").innerHTML = response.data.error;
+                        $("#error_messages").html("Error: "+response.data.error).show();
                         console.log(response);
                     }
                     //console.log("service error");
@@ -112,7 +113,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response;
                 }, function(response) {
                     //alert("Error finding this contribution.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -125,7 +126,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 }, function(response) {
 
                     //alert("Error editing this contribution.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -136,7 +137,20 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response;
                 }, function(response) {
                     //alert("Error deleting this contribution.");
-                    document.getElementById("error_messages").innerHTML = response.data.error;
+                    $("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                });
+        }
+        this.upvote = function(contributionId, token) {
+            let body = {};
+            body.access_token = token;
+            var url = "/api/contributions/"+contributionId+"/votes";
+            return $http.post(url, body).
+                then(function(response) {
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -148,7 +162,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response;
             }, function (response) {
                 //alert("Error getting login url");
-                document.getElementById("error_messages").innerHTML = response.data.error;
+                $("#error_messages").html("Error: "+response.data.error).show();
                 console.log(response);
             })
         }
@@ -158,7 +172,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response.data;
             }, function (response) {
                 //alert("Error getting login url");
-                document.getElementById("error_messages").innerHTML = response.data.error;
+                $("#error_messages").html("Error: "+response.data.error).show();
                 console.log(response);
             })
         }
@@ -168,15 +182,16 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     return response.data;
             }, function (response) {
                 //alert("Error getting login url");
-                document.getElementById("error_messages").innerHTML = response.data.error;
+                $("#error_messages").html("Error: "+response.data.error).show();
                 console.log(response);
             })
         }
     })
-    .controller("ListController", function($scope, $cookies, $location, contributions, Users) {
+    .controller("ListController", function($scope, $cookies, $location, contributions, Users, Contributions) {
         $scope.contributions = contributions.data;
 
-        $scope.authToken = $cookies.get('access_token');
+        let token = $cookies.get('access_token');
+        $scope.authToken = token;
         $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
         $scope.userId = $cookies.get('user_id');
@@ -184,7 +199,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -194,12 +209,21 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $cookies.remove('user_id');
             $location.path("#/");
         }
+        $scope.upvote = function(contributionId) {
+            Contributions.upvote(contributionId, token).then(function(doc) {
+                console.log(doc);
+            }, function(response) {
+                //alert(response);
+                $("#error_messages").html("Error: "+response.data.error).show();
+                console.log(response);
+            });
+        }
         Users.getUser($scope.userId).then(function(doc) {
             console.log(doc);
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -214,7 +238,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -229,7 +253,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -244,7 +268,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -259,7 +283,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -318,7 +342,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -333,7 +357,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         Users.getThreads($scope.userId).then(function(doc) {
@@ -341,7 +365,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.contributions = doc;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -350,7 +374,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.contribution = doc.data;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
 
@@ -381,7 +405,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            document.getElementById("error_messages").innerHTML = response.data.error;
+            $("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
