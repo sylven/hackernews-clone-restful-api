@@ -45,6 +45,10 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 controller: "EditContributionController",
                 templateUrl: "contribution.html"
             })
+            .when("/user/:userId", {
+                controller: "UserController",
+                templateUrl: "profile.html"
+            })
             .otherwise({
                 redirectTo: "/"
             })
@@ -193,6 +197,16 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             })
         }
     })
+    .controller("UserController", function($scope, $cookies, $location, Users){
+        let token = $cookies.get('access_token');
+        $scope.userDisplayName = $cookies.get('user_display_name');
+        $scope.authToken = token;
+        $scope.userImageUrl = $cookies.get('user_image');
+        $scope.userKarma = $cookies.get('user_points');
+        $scope.userAbout = $cookies.get('user_about');
+        $scope.userEmail = $cookies.get('user_email');
+        }
+    )
     .controller("ListController", function($scope, $cookies, $location, contributions, Users, Contributions) {
         $scope.contributions = contributions.data;
 
