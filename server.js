@@ -877,24 +877,27 @@ const {google} = require('googleapis');
               newContribution.text = req.body.text;
             }
             newContribution.authorId = userId.toString();
-            db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
-              if (err) {
-                handleError(res, err.message, "Failed to create new contribution.");
-              }
-              else {
-                // Update user points
-                db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
-                  if (err3) {
-                    handleError(res, err3.message, "User doesn't exist", 404);
+            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(userId) }, function(err3, doc3) {
+              if (err3) {
+                handleError(res, err3.message, "User doesn't exist", 404);
+              } else {
+                doc3.points = doc3.points+1;
+                db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
+                  if (err4) {
+                    handleError(res, err4.message, "Failed to update user");
                   } else {
-                    doc3.points = doc3.points+1;
-                    db.collection(USERS_COLLECTION).updateOne({_id: new ObjectID(userId)}, doc3, function(err4, doc4) {
-                      if (err4) {
-                        handleError(res, err4.message, "Failed to update user");
-                      } else {
+                    // TODO: User name shouldn't be copied here
+                    newContribution.authorName = doc3.displayName;
+                    db.collection(CONTRIBUTIONS_COLLECTION).insertOne(newContribution, function(err, doc) {
+                      if (err) {
+                        handleError(res, err.message, "Failed to create new contribution.");
+                      }
+                      else {
+                        // Update user points
                         res.status(201).json(doc.ops[0]);
                       }
                     });
+                    
                   }
                 });
               }
