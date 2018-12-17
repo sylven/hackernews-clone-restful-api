@@ -235,6 +235,37 @@ const {google} = require('googleapis');
     }
   });
 
+  function getChildComments(id, callback) {
+    db.collection(COMMENTS_COLLECTION).find({ parentCommentId: id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+      if (err2) {
+        handleError(res, err2.message, "Failed to get comments.");
+      } else {
+        //console.log("getChildComments with id "+id);
+
+        let promises = [];
+        docs.forEach((value, index, array) => {
+          
+            //console.log(value);
+            //let childComments = await getChildComments(value._id.toString());
+            //docs.comments = childComments;
+            promises.push(new Promise((resolve, reject) => {
+              //setTimeout(resolve, 100, "foo");
+              getChildComments(value._id.toString(), function(response) {
+                value.childComments = response;
+                //console.log(value);
+                resolve(value);
+              })
+            }))
+        });
+
+        Promise.all(promises).then(values => {
+          //console.log(values);
+          callback(values);
+        });
+      }
+    });
+  }
+
   app.get("/api/contributions/:id/comments", function(req, res) {
     if (isObjectId(req.params.id)) {
       db.collection(CONTRIBUTIONS_COLLECTION).findOne({ _id: new ObjectID(req.params.id) }, function(err, doc) {
@@ -244,11 +275,29 @@ const {google} = require('googleapis');
           if (!doc) {
             handleError(res, "Not found", "Contribution doesn't exist", 404);
           } else {
-            db.collection(COMMENTS_COLLECTION).find({ contributionId: req.params.id }, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
+            
+            db.collection(COMMENTS_COLLECTION).find({"$and":[{"contributionId": req.params.id},{ "parentCommentId" : { "$exists" : false }}]}, {"sort" : [['createdDate', 'desc']]}).toArray(function(err2, docs) {
               if (err2) {
                 handleError(res, err2.message, "Failed to get comments.");
               } else {
-                res.status(200).json(docs);  
+                let promises = [];
+                docs.forEach((value, index, array) => {
+                    //console.log(value);
+                    //let childComments = await getChildComments(value._id.toString());
+                    //docs.comments = childComments;
+                    promises.push(new Promise((resolve, reject) => {
+                      //setTimeout(resolve, 100, "foo");
+                      getChildComments(value._id.toString(), function(response) {
+                        value.childComments = response;
+                        resolve(value);
+                      })
+                    }))
+                });
+
+                Promise.all(promises).then(values => {
+                  console.log(values);
+                  res.status(200).json(docs);
+                });
               }
             });
           }
