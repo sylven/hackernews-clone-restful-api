@@ -39,7 +39,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             })
             .when("/submit", {
                 controller: "NewContributionController",
-                templateUrl: "contribution-form.html"
+                templateUrl: "submit.html"
             })
             .when("/contribution/:contributionId", {
                 controller: "EditContributionController",
@@ -158,6 +158,71 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
+                });
+        }
+        this.getComments = function(token, contributionId) {
+            let body = {};
+            body.access_token = token;
+            var url = "/api/contributions/"+contributionId+"/comments";
+            return $http.get(url, body).
+                then(function(response) {
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                });
+        }
+        this.postComment = function(token, contributionId, newComment) {
+            var url = "/api/contributions/" + contributionId + "/comments";
+            newComment.access_token = token;
+            return $http.post(url, newComment).
+                then(function(response) {
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                });
+        }
+    })
+    .service("Comments", function ($http) {
+        this.post = function(token, commentId, newComment) {
+            var url = "/api/comments/" + commentId + "/comments";
+            newComment.access_token = token;
+            return $http.post(url, newComment).
+                then(function(response) {
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                });
+        }
+        this.upvote = function(token, commentId) {
+            let body = {};
+            body.access_token = token;
+            var url = "/api/comments/"+commentId+"/votes";
+            return $http.post(url, body).
+                then(function(response) {
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                });
+        }
+        this.delete = function(token, commentId) {
+            var url = "/api/comments/" + commentId;
+            let body = {};
+            body.access_token = token;
+            return $http.delete(url, {data: body, headers: {'Content-Type': 'application/json;charset=utf-8'}}).
+                then(function(response) {
+                    console.log(response);
+                    return response;
+                }, function(response) {
+                    //alert("Error deleting this contribution.");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
@@ -206,7 +271,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -221,7 +286,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 console.log(doc);
             }, function(response) {
                 //alert(response);
-                $("#error_messages").html("Error: "+response.data.error).show();
+                //$("#error_messages").html("Error: "+response.data.error).show();
                 console.log(response);
             });
         }
@@ -229,7 +294,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -244,7 +309,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -258,7 +323,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -273,7 +338,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -287,7 +352,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -312,8 +377,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     $window.location.href = contributionUrl;
                 }, function(response) {
                     //alert(response);
-                    $("#error_messages").html("Error: "+response.data.error).show();
-                    console.log("controller error");
+                    //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
             }
@@ -327,8 +391,8 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html(response.data.error);
-            $("#error_messages").display();
+            //$("#error_messages").html(response.data.error);
+            //$("#error_messages").display();
             console.log(response);
         });
 
@@ -344,7 +408,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
@@ -359,7 +423,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -373,7 +437,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         Users.getThreads($scope.userId).then(function(doc) {
@@ -381,11 +445,11 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.contributions = doc;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
     })
-    .controller("EditContributionController", function($scope, $cookies, $routeParams, Contributions, Users, $location, $window) {
+    .controller("EditContributionController", function($scope, $cookies, $routeParams, Contributions, Users, $location, $window, Comments) {
         let token = $cookies.get('access_token');
 
         $scope.authToken = token;
@@ -412,9 +476,49 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.contributionFormUrl = "contribution-form.html";
         }
 
+        $scope.postReplyToComment = function(newComment, parentCommentId) {
+            //console.log(newComment);
+            if (!newComment || !newComment.text) {
+                $("#error_messages").html("Please insert data").show();
+            } else {
+                Comments.post(token, parentCommentId, newComment).then(function(doc) {
+                    $window.location.reload();
+                }, function(response) {
+                    console.log(response);
+                });
+                //$scope.editMode = false;
+                //$scope.contributionFormUrl = "";
+            }
+        }
+
+        $scope.postComment = function(newComment, contributionId) {
+            //console.log(newComment);
+            if (!newComment || !newComment.text) {
+                $("#error_messages").html("Please insert data").show();
+            } else {
+                Contributions.postComment(token, contributionId, newComment).then(function(doc) {
+                    $window.location.reload();
+                }, function(response) {
+                    console.log(response);
+                });
+                //$scope.editMode = false;
+                //$scope.contributionFormUrl = "";
+            }
+        }
+
+        $scope.showReplyForm = function(replyFormContributionId) {
+            $("#reply"+replyFormContributionId).show();
+        }
+
+        $scope.cancelReply = function(replyFormContributionId) {
+            $("#reply"+replyFormContributionId).hide();
+            $("#error_messages").hide();
+        }
+
         $scope.back = function() {
             $scope.editMode = false;
             $scope.contributionFormUrl = "";
+            $("#error_messages").hide();
         }
 
         $scope.saveContribution = function(contribution) {
@@ -443,18 +547,35 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 //}, 3000);  //5s
             }, function(response) {
                 //alert(response);
-                $("#error_messages").html("Error: "+response.data.error).show();
+                //$("#error_messages").html("Error: "+response.data.error).show();
                 console.log("controller error");
                 console.log(response);
             });
         }
 
+        $scope.upvoteComment = function(commentId) {
+            Comments.upvote(token, commentId).then(function(doc) {
+                //console.log("createContribution");
+                //console.log(doc);
+                //$location.path(contributionUrl);
+
+                $window.location.reload();
+                // It's not working
+                //setTimeout(() => {
+                //    $window.location.href = '#/';
+                //}, 3000);  //5s
+            }, function(response) {
+                //alert(response);
+                //$("#error_messages").html("Error: "+response.data.error).show();
+                console.log(response);
+            });
+        }
         
         Users.getLoginUrl().then(function(doc) {
             $scope.loginUrl = doc.data.url;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
         $scope.logout = function() {
@@ -468,7 +589,34 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
+        Contributions.getComments(token, $routeParams.contributionId).then(function(doc) {
+            console.log(doc.data);
+            $scope.comments = doc.data;
+        }, function(response) {
+            //alert(response);
+            //$("#error_messages").html("Error: "+response.data.error).show();
+            console.log(response);
+        });
+
+        $scope.deleteComment = function(commentId) {
+            Comments.delete(token, commentId).then(function(doc) {
+                //console.log("createContribution");
+                //console.log(doc);
+                //$location.path(contributionUrl);
+
+                $window.location.reload();
+                // It's not working
+                //setTimeout(() => {
+                //    $window.location.href = '#/';
+                //}, 3000);  //5s
+            }, function(response) {
+                //alert(response);
+                //$("#error_messages").html("Error: "+response.data.error).show();
+                console.log("controller error");
+                console.log(response);
+            });
+        }
     });

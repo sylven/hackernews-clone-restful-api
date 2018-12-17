@@ -1,31 +1,52 @@
 <div ng-include="'nav.html'"></div>
 <div class="container">
   <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
-
-  <div class = "row">
-    <div class="col-md-6">
-      <h2>
-        {{ contribution.title }}
-      </h2>
-    </div>
-    <div class="col-md-3">
-    </div>
-    <div class="col-md-2">
-      <a ng-if="mine" href="#/"><button style="margin-top:20px" class="btn btn-default" ng-click="deleteContribution(contribution._id)">Delete</button></a>
-    </div>
-    <div class="col-md-1">
-    </div>
-  </div>
-  <div ng-hide="editMode" class="container">
-    <div>
-      <p ng-if="contribution.title">title: {{ contribution.title }}</p>
-      <p ng-if="contribution.text">text: {{ contribution.text }} </p>
-      <p ng-if="contribution.url">url: {{ contribution.url }} </p>
-      <p ng-if="contribution.authorName">url: {{ contribution.authorName }} </p>
+  <div ng-hide="editMode">
+    <script type="text/ng-template" id="commentTree">
+      <div ng-show="{{comment.authorId !== userId}}" class="votearrow-comment" title="upvote" ng-click="upvoteComment(comment._id)"></div><div class="orange-star-comment" ng-show="{{comment.authorId === userId}}">*</div><div id="item-footer" style="font-size:12px;color:#828282;"><a href="#/user/{{comment.authorId}}">{{comment.authorName}}</a> | {{comment.createdDate}} | {{ comment.points }} points <span ng-show="{{comment.authorId === userId}}">| <a href="" ng-click="deleteComment(comment._id)">delete</a></span> | <a href="" ng-click="showReplyForm(comment._id)">reply</a></div>
+      <div class="contribution-comment-text">{{comment.text}}</div>
+      <div id="reply{{comment._id}}" style="display:none">
+      <input type="hidden" ng-model="newReplyToComment.parentCommentId" required>
+      <textarea name="text" rows="6" cols="60" ng-model="newReplyToComment.text" required></textarea>
       <p>
-        <button ng-if="mine" style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">Edit</button>
-        <a href="#/"><button style="margin-top:20px" class="btn btn-default">Back</button></a>
+        <button style="margin-top:5px" class="btn btn-default" ng-click="postReplyToComment(newReplyToComment, comment._id)">reply</button>
+        <button style="margin-top:5px" class="btn btn-default" ng-click="cancelReply(comment._id)">cancel</button>
       </p>
+      </div>
+      <ul ng-if="comment.childComments">
+          <li ng-repeat="comment in comment.childComments" ng-include="'commentTree'">           
+          </li>
+      </ul>
+    </script>
+
+    <div class = "row">
+      <div class="col-md-9">
+        <h2>
+          Contribution
+        </h2>
+      </div>
+      <div class="col-md-3" style="text-align: right">
+        <a ng-if="mine" href="#/"><button style="margin-top:20px" class="btn btn-danger" ng-click="deleteContribution(contribution._id)">delete</button></a>
+        <button ng-if="mine" style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">edit</button>
+        <a href="#/"><button style="margin-top:20px" class="btn btn-default">back</button></a>
+      </div>
+    </div>
+    <div class="container">
+      <div style="margin-bottom: 20px">
+        <div ng-if="!mine" class="votearrow" title="upvote" ng-click="upvote(contribution._id)"></div><div class="orange-star" ng-if="mine">*</div> <a ng-if="contribution.url" ng-href="{{contribution.url}}">{{ contribution.title }}</a><a ng-if="!contribution.url" ng-href="#/contribution/{{contribution._id}}">{{ contribution.title }}</a> <a ng-if="contribution.url" href="{{contribution.url}}" style="font-size: 12px;color:#828282;">({{contribution.url}})</a>
+                    <div id="item-footer" style="font-size:12px;margin-left:31px;color:#828282;">{{ contribution.points }} points by <a href="#/user/{{contribution.authorId}}">{{contribution.authorName}}</a> {{contribution.createdDate}} | <a href="#/contribution/{{contribution._id}}">{{contribution.comments}} comments</a></div>
+      </div>
+
+      <div>
+        <p ng-if="contribution.text">{{ contribution.text }} </p>
+        <p><textarea name="text" rows="6" cols="60" ng-model="newComment.text"></textarea></p>
+        <p><button class="btn btn-default" ng-click="postComment(newComment, contribution._id)">add comment</button></p>
+      </div>
+      <div style="padding-top: 20px">
+        <ul class="list-unstyled">
+          <li ng-repeat="comment in comments" ng-include="'commentTree'"></li>
+        </ul>    
+      </div>
     </div>
   </div>
   <!-- Contribution form -->
