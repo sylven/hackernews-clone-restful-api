@@ -1209,7 +1209,7 @@ const {google} = require('googleapis');
             }
             else {
               //res.status(201).json(doc.ops[0]);
-              res.cookie('user_id', doc._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+              res.cookie('user_id', doc.ops[0]._id.toString(), {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
 
               // Redirect to base url
               var newPath = req.originalUrl.split('api')[0];
