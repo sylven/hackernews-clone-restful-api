@@ -18,6 +18,28 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 controller: "EditContributionController",
                 templateUrl: "contribution.html"
             })
+            .when("/newest", {
+                templateUrl: "newest.html",
+                controller: "ListController",
+                resolve: {
+                    contributions: function(Contributions){
+                        return Contributions.getContributionsNewest()
+                    }
+                }
+            })
+            .when("/ask", {
+                templateUrl: "ask.html",
+                controller: "ListController",
+                resolve: {
+                    contributions: function(Contributions){
+                        return Contributions.getAsk()
+                    }
+                }
+            })
+            .when("/profile",{
+                templateUrl: "profile.html",
+                controller: "UserController",
+            })
             .otherwise({
                 redirectTo: "/"
             })
@@ -32,7 +54,25 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     document.getElementById("error_messages").innerHTML = response.data.error;
                     console.log(response);
                 });
-        }
+        };
+        this.getContributionsNewest = function() {
+            return $http.get("/api/contributions/new").
+                then(function(response) {
+                    return response;
+            }, function(response){
+                document.getElementById("error_messages").innerHTML = response.data.error;
+                console.log(response);
+            });
+        };
+        this.getContributionAsk = function(){
+            return $http.get("/api/contributions/ask").
+                then(function(response){
+                return response;
+            }, function(response){
+                document.getElementById("error_messages").innerHTML = response.data.error;
+                console.log(response);
+            });
+        };
         this.createContribution = function(token, contribution) {
             // console.log(token);
             // let headers = new Headers();
@@ -57,7 +97,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     //console.log("service error");
 
                 });
-        }
+        };
         this.getContribution = function(contributionId) {
             var url = "/api/contributions/" + contributionId;
             return $http.get(url).
@@ -68,7 +108,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     document.getElementById("error_messages").innerHTML = response.data.error;
                     console.log(response);
                 });
-        }
+        };
         this.editContribution = function(contribution) {
             var url = "/api/contributions/" + contribution._id;
             console.log(contribution._id);
@@ -81,7 +121,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     document.getElementById("error_messages").innerHTML = response.data.error;
                     console.log(response);
                 });
-        }
+        };
         this.deleteContribution = function(contributionId) {
             var url = "/api/contributions/" + contributionId;
             return $http.delete(url).
@@ -108,7 +148,6 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
     })
     .controller("ListController", function($scope, $cookies, $location, contributions, Users) {
         $scope.contributions = contributions.data;
-
         $scope.authToken = $cookies.get('access_token');
         $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
@@ -126,12 +165,24 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $location.path("#/");
         }
     })
+    .controller("UserController", function($scope, $cookies, $location, Users){
+        $scope.userDisplayName = $cookies.get('user_display_name');
+        $scope.userImageUrl = $cookies.get('user_image');
+        $scope.userAbout = $cookies.get('user_about');
+        $scope.userKarma = $cookies.get('user_points');
+        $scope.userEmail = $cookies.get('user_email');
+        $scope.authToken = $cookies.get('access_token');
+        $scope.logout = function() {
+            $cookies.remove('access_token');
+            $cookies.remove('user_display_name');
+            $cookies.remove('user_image');
+            $location.path("#/");
+        }
+    })
     .controller("NewContributionController", function($scope, $cookies, $location, Contributions, Users) {
         $scope.back = function() {
             $location.path("#/");
-        }
-
-
+        };
         var token = $cookies.get('access_token');
         $scope.saveContribution = function(contribution) {
             Contributions.createContribution(token, contribution).then(function(doc) {
