@@ -244,7 +244,15 @@ const {google} = require('googleapis');
 
         let promises = [];
         docs.forEach((value, index, array) => {
-          
+            db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(value.authorId) }, function(err3, doc2) {
+              if (err3) {
+                //handleError(res, "Failed to get comment's author", "Comment not found");
+              } else {
+                if (doc2) {
+                  value.authorName = doc2.displayName;
+                }
+              }
+            });
             //console.log(value);
             //let childComments = await getChildComments(value._id.toString());
             //docs.comments = childComments;
@@ -285,6 +293,17 @@ const {google} = require('googleapis');
                     //console.log(value);
                     //let childComments = await getChildComments(value._id.toString());
                     //docs.comments = childComments;
+
+                    db.collection(USERS_COLLECTION).findOne({ _id: new ObjectID(value.authorId) }, function(err3, doc2) {
+                      if (err3) {
+                        //handleError(res, "Failed to get comment's author", "Comment not found");
+                      } else {
+                        if (doc2) {
+                          value.authorName = doc2.displayName;
+                        }
+                      }
+                    });
+                    
                     promises.push(new Promise((resolve, reject) => {
                       //setTimeout(resolve, 100, "foo");
                       getChildComments(value._id.toString(), function(response) {
