@@ -19,9 +19,10 @@
             <p>Karma: {{ userKarma }} </p>
             <p>About:</p>
             <textarea>{{ userAbout }} </textarea>
+            <button style="margin-top:20px" class="btn btn-default" ng-click="saveProfile()">Save</button>
         </div>
-        <button style="margin-top:20px" class="btn btn-default"> View Users' Posts</button>
-        <button style="margin-top:20px" class="btn btn-default"> View Users' Comments</button>
+        <button style="margin-top:20px" class="btn btn-default" href="#/own_contributions"> View Users' Contributions</button>
+        <button style="margin-top:20px" class="btn btn-default" href="#/own_comments"> View Users' Comments</button>
     </div>
     </div>
 </div>
