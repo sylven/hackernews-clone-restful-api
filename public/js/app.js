@@ -64,7 +64,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     $("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
-        }
+        };
         this.getNewestContributions = function() {
             return $http.get("/api/contributions/new").
                 then(function(response) {
@@ -196,6 +196,15 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 console.log(response);
             })
         }
+        this.getContributions = function(id){
+            return $http.get("/api/users/"+id+"/contributions").
+                then(function(response) {
+                    return response.data;
+                }, function(response){
+                    $("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                })
+        }
     })
     .controller("UserController", function($scope, $cookies, $location, Users){
         let token = $cookies.get('access_token');
@@ -205,6 +214,11 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         $scope.userKarma = $cookies.get('user_points');
         $scope.userAbout = $cookies.get('user_about');
         $scope.userEmail = $cookies.get('user_email');
+        $scope.ownUserId = $cookies.get('user_id');
+
+        $scope.saveProfile = function() {
+
+        }
         }
     )
     .controller("ListController", function($scope, $cookies, $location, contributions, Users, Contributions) {
@@ -310,8 +324,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
     .controller("NewContributionController", function($scope, $cookies, $location, Contributions, Users, $window) {
         $scope.back = function() {
             $location.path("#/");
-        }
-
+        };
         var token = $cookies.get('access_token');
         $scope.saveContribution = function(contribution) {
             console.log(contribution);
