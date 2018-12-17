@@ -1241,6 +1241,9 @@ const {google} = require('googleapis');
       res.cookie('access_token', response.tokens.access_token, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
       res.cookie('user_display_name', response.displayName, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
       res.cookie('user_image', response.image.url, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      res.cookie('user_about', response.about, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      res.cookie('user_points', response.points, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
+      res.cookie('user_email', response.email, {maxAge: 24 * 60 * 60 * 1000, httpOnly: false});
       // Check if user already exists
       console.log("User object from Google");
       console.log(response);
