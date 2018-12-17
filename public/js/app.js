@@ -390,9 +390,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         };
         var token = $cookies.get('access_token');
         $scope.saveContribution = function(contribution) {
+            $("#error_messages").hide();
             console.log(contribution);
             if (!contribution || !contribution.title || (!contribution.text && !contribution.url)) {
                 $("#error_messages").html("Please insert data").show();
+            } else if (!/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(contribution.url)) {
+                $("#error_messages").html("Please insert a valid url").show();
             } else if (contribution.title && contribution.text && contribution.url) {
                 $("#error_messages").html("You can only send a text or url").show();
             } else {
@@ -494,7 +497,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             }
         }, function(response) {
             //alert(response);
-            $("#error_messages").html("Error: "+response.data.error).show();
+            //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
 
@@ -504,6 +507,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         }
 
         $scope.postReplyToComment = function(newComment, parentCommentId) {
+            $("#error_messages").hide();
             //console.log(newComment);
             if (!newComment || !newComment.text) {
                 $("#error_messages").html("Please insert data").show();
@@ -519,6 +523,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         }
 
         $scope.postComment = function(newComment, contributionId) {
+            $("#error_messages").hide();
             //console.log(newComment);
             if (!newComment || !newComment.text) {
                 $("#error_messages").html("Please insert data").show();
@@ -549,9 +554,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         }
 
         $scope.saveContribution = function(contribution) {
+            $("#error_messages").hide();
             console.log(contribution);
             if (!contribution || !contribution.title || (!contribution.text && !contribution.url)) {
                 $("#error_messages").html("Please insert data").show();
+            } else if (!/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(contribution.url)) {
+                $("#error_messages").html("Please insert a valid url").show();
             } else if (contribution.title && contribution.text && contribution.url) {
                 $("#error_messages").html("You can only send a text or url").show();
             } else {
