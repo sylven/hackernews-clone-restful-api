@@ -21,11 +21,11 @@
         </li>
       </ul>
       <div class="form-inline mt-2 mt-md-0">
-        <a ng-show="{{authToken === undefined}}" href="{{ loginUrl }}"><button class="btn btn-dark btn-outline my-2 my-sm-0">Login</button></a>
+        <a ng-show="{{authToken === undefined}}" href="{{ loginUrl }}"><button class="btn btn-dark btn-outline my-2 my-sm-0">login</button></a>
         <div ng-show="{{authToken !== undefined}}">
             <img ng-show="{{userImageUrl !== undefined}}" src="{{ userImageUrl }}" />
             <a href="#/user/{{userId}}">{{userDisplayName}}</a> ({{userPoints}})&nbsp;
-            <a href="" ng-click="logout()"><button class="btn btn-dark btn-outline my-2 my-sm-0">Logout</button></a>
+            <a href="" ng-click="logout()"><button class="btn btn-dark btn-outline my-2 my-sm-0">logout</button></a>
         </div>
       </div>
     </div>

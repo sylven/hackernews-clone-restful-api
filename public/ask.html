@@ -20,8 +20,8 @@
       <tbody>
         <tr ng-repeat="(key, contribution) in contributions | orderBy:'createdDate'" style="cursor:pointer">
           <td>
-            <div style="float:left;color:#828282;">{{key+1}}.</div> <div class="votearrow" title="upvote"  ng-click="upvote(contribution._id)"></div> <a ng-show="{{contribution.url !== undefined}}" ng-href="{{contribution.url}}">{{ contribution.title }}</a><a ng-show="{{contribution.url === undefined}}" ng-href="#/contribution/{{contribution._id}}">{{ contribution.title }}</a> <a ng-show="{{contribution.url !== undefined}}" href="{{contribution.url}}" style="font-size: 12px;color:#828282;">({{contribution.url}})</a>
-            <div id="item-footer" style="font-size:12px;margin-left:41px;color:#828282;">{{ contribution.points }} points by <a href="#/user/{{contribution.authorId}}">{{contribution.authorName}}</a> {{contribution.createdDate}} | <a href="#/contribution/{{contribution._id}}">{{contribution.comments}} comments</a></div>
+            <div style="float:left;color:#828282;">{{key+1}}.&nbsp;</div><div ng-show="{{contribution.authorId !== userId}}" class="votearrow" title="upvote" ng-click="upvote(contribution._id)"></div><div class="orange-star" ng-show="{{contribution.authorId === userId}}">*</div> <a ng-show="{{contribution.url !== undefined}}" ng-href="{{contribution.url}}">{{ contribution.title }}</a><a ng-show="{{contribution.url === undefined}}" ng-href="#/contribution/{{contribution._id}}">{{ contribution.title }}</a> <a ng-show="{{contribution.url !== undefined}}" href="{{contribution.url}}" style="font-size: 12px;color:#828282;">({{contribution.url}})</a>
+            <div id="item-footer" style="font-size:12px;margin-left:45px;color:#828282;">{{ contribution.points }} points by <a href="#/user/{{contribution.authorId}}">{{contribution.authorName}}</a> {{contribution.createdDate}} | <a href="#/contribution/{{contribution._id}}">{{contribution.comments}} comments</a></div>
           </td>
         </tr>
       </tbody>
