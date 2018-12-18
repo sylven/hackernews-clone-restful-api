@@ -18,7 +18,7 @@
     <div id="error_messages" class="alert alert-danger" role="alert" style="display:none"></div>
     <table class="table table-hover">
       <tbody>
-        <tr ng-repeat="(key, contribution) in contributions | orderBy:'createdDate'" style="cursor:pointer">
+        <tr ng-repeat="(key, contribution) in contributions | orderBy:'createdDate'">
           <td>
             <div id="item-footer" style="font-size:12px;color:#828282;">{{ contribution.points }} points by <a href="#/user/{{userDisplayName}}">{{userDisplayName}}</a> {{contribution.createdDate}} <span ng-show="{{contribution.contributionId !== undefined}}" >| <a href="#/contribution/{{contribution.contributionId}}">Visit contribution</a></span></div>
              </div> <a ng-show="{{contribution.url !== undefined}}" ng-href="{{contribution.url}}">{{ contribution.title }}</a><a ng-show="{{contribution.url === undefined}}" ng-href="#/contribution/{{contribution._id}}">{{ contribution.title }}</a> <a ng-show="{{contribution.url !== undefined}}" href="{{contribution.url}}" style="font-size: 12px;color:#828282;">({{contribution.url}})</a>
