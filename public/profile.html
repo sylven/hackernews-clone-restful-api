@@ -1,28 +1,26 @@
 <div ng-include="'nav.html'"></div>
 <div class="container">
-
     <div class = "row">
         <div class="col-md-6">
             <h2>
-                {{ userDisplayName }}
+                {{ user.displayName }}
             </h2>
         </div>
         <div class="col-md-3">
-            <img ng-show="{{userImageUrl !== undefined}}" src="{{ userImageUrl }}" />
+            <img ng-show="{{userImageUrl !== undefined}}" src="{{ user.image }}" />
         </div>
         <div class="col-md-1">
         </div>
     </div>
     <div class="container">
         <div>
-            <p>Email: {{ userEmail }} </p>
-            <p>Karma: {{ userKarma }} </p>
+            <p>Karma: {{ user.points }} </p>
             <p>About:</p>
-            <textarea>{{ userAbout }} </textarea>
+            <textarea>{{ user.about }} </textarea>
             <button style="margin-top:20px" class="btn btn-default" ng-click="saveProfile()">Save</button>
         </div>
-        <button style="margin-top:20px" class="btn btn-default" href="#/own_contributions"> View Users' Contributions</button>
-        <button style="margin-top:20px" class="btn btn-default" href="#/own_comments"> View Users' Comments</button>
+        <button style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/contributions"> View Users' Contributions</button>
+        <button style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/threads"> View Users' Comments</button>
     </div>
     </div>
 </div>

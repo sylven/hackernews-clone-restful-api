@@ -49,6 +49,14 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 controller: "UserController",
                 templateUrl: "profile.html"
             })
+            .when("/user/:userId/contributions", {
+                controller: "UserContributionsController",
+                templateUrl: "user_contributions.html"
+            })
+            .when("/user/:userId/threads", {
+                controller: "UserThreadsController",
+                templateUrl: "user_threads.html"
+            })
             .otherwise({
                 redirectTo: "/"
             })
@@ -272,18 +280,53 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 })
         }
     })
-    .controller("UserController", function($scope, $cookies, $location, Users){
+    .controller("UserContributionsController", function($scope, $cookies, $routeParams, Users){
         let token = $cookies.get('access_token');
-        $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.authToken = token;
+        $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
-        $scope.userKarma = $cookies.get('user_points');
-        $scope.userAbout = $cookies.get('user_about');
-        $scope.userEmail = $cookies.get('user_email');
-        $scope.ownUserId = $cookies.get('user_id');
+        $scope.userId = $cookies.get('user_id');
+        console.log($routeParams.userId);
+        Users.getContributions($routeParams.userId).then(function(doc){
+            console.log(doc);
+            $scope.contributions = doc;
+        }, function(response){
+            console.log(response);
+        })
+    })
+    .controller("UserController", function($scope, $cookies, $routeParams, $location, Users){
+        let token = $cookies.get('access_token');
+        $scope.authToken = token;
+        $scope.userDisplayName = $cookies.get('user_display_name');
+        $scope.userImageUrl = $cookies.get('user_image');
+        $scope.userId = $cookies.get('user_id');
+        console.log($routeParams.userId);
+        Users.getUser($routeParams.userId).then(function(doc) {
+            console.log(doc);
+            $scope.user = doc;
+        }, function(response) {
+            //alert(response);
+            //$("#error_messages").html("Error: "+response.data.error).show();
+            console.log(response);
+        });
 
-        $scope.saveProfile = function() {
-
+        $scope.saveContribution = function(contribution) {
+            $("#error_messages").hide();
+            console.log(contribution);
+            if (!contribution || !contribution.title || (!contribution.text && !contribution.url)) {
+                $("#error_messages").html("Please insert data").show();
+            } else if (!/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(contribution.url)) {
+                $("#error_messages").html("Please insert a valid url").show();
+            } else if (contribution.title && contribution.text && contribution.url) {
+                $("#error_messages").html("You can only send a text or url").show();
+            } else {
+                Contributions.editContribution(token, contribution);
+                $scope.editMode = false;
+                $scope.contributionFormUrl = "";
+            }
+        };
+        $scope.saveProfile = function(user) {
+            console.log(user);
         }
         }
     )
@@ -362,6 +405,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
         $scope.userId = $cookies.get('user_id');
+        console.log($cookies.get('user_id'));
         Users.getLoginUrl().then(function(doc) {
             $scope.loginUrl = doc.data.url;
         }, function(response) {
@@ -377,6 +421,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $location.path("#/");
         }
         Users.getUser($scope.userId).then(function(doc) {
+            console.log(doc);
             $scope.userPoints = doc.points;
         }, function(response) {
             //alert(response);
@@ -481,7 +526,6 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
     })
     .controller("EditContributionController", function($scope, $cookies, $routeParams, Contributions, Users, $location, $window, Comments) {
         let token = $cookies.get('access_token');
-
         $scope.authToken = token;
         $scope.userDisplayName = $cookies.get('user_display_name');
         $scope.userImageUrl = $cookies.get('user_image');
