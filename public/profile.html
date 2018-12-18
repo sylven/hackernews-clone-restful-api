@@ -1,26 +1,30 @@
 <div ng-include="'nav.html'"></div>
 <div class="container">
     <div class = "row">
-        <div class="col-md-6">
+        <div class="col-md-9">
             <h2>
-                {{ user.displayName }}
+                <img ng-show="{{userImageUrl !== undefined}}" src="{{ user.image }}" /> {{ user.displayName }}
             </h2>
         </div>
-        <div class="col-md-3">
-            <img ng-show="{{userImageUrl !== undefined}}" src="{{ user.image }}" />
-        </div>
-        <div class="col-md-1">
+        <div class="col-md-3" style="text-align: right">
+            <button ng-if="userId == user.id && !editMode" style="margin-top:20px" class="btn btn-default" ng-click="toggleEdit()">edit</button>
         </div>
     </div>
-    <div class="container">
+    <div class="container" style="margin-top:30px;">
         <div>
-            <p>Karma: {{ user.points }} </p>
+            <p ng-hide="editMode">Points: {{ user.points }} </p>
             <p>About:</p>
-            <textarea>{{ user.about }} </textarea>
-            <button style="margin-top:20px" class="btn btn-default" ng-click="saveProfile()">Save</button>
+            <div ng-hide="editMode">
+                <p>{{user.about}} </p>
+            </div>
+            <div ng-show="editMode">
+                <textarea rows="2" cols="60" ng-model="user.about">{{ user.about }} </textarea><br>
+                <button class="btn btn-default" ng-click="saveProfile(userId, user)">save</button>
+                <button class="btn btn-default" ng-click="toggleEdit()">cancel</button>
+            </div>
         </div>
-        <button style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/contributions"> View Users' Contributions</button>
-        <button style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/threads"> View Users' Comments</button>
+        <button ng-hide="editMode" style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/contributions"> View Users' Contributions</button><br>
+        <button ng-hide="editMode" style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/threads"> View Users' Comments</button>
     </div>
     </div>
 </div>

@@ -326,6 +326,16 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     console.log(response);
                 })
         }
+        this.put = function(token, user) {
+            user.access_token = token;
+            return $http.put("/api/users", user).
+                then(function(response) {
+                    return response.data;
+                }, function(response){
+                    //$("#error_messages").html("Error: "+response.data.error).show();
+                    console.log(response);
+                })
+        }
     })
     .controller("UserContributionsController", function($scope, $cookies, $routeParams, Users){
         let token = $cookies.get('access_token');
@@ -372,11 +382,16 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 $scope.contributionFormUrl = "";
             }
         };
-        $scope.saveProfile = function(user) {
+        $scope.saveProfile = function(userId, user) {
+            Users.put(token, user);
+            $scope.editMode = false;
             console.log(user);
         }
+        $scope.toggleEdit = function() {
+            if (!$scope.editMode) $scope.editMode = true;
+            else $scope.editMode = !$scope.editMode;
         }
-    )
+    })
     .controller("ListController", function($scope, $cookies, $location, contributions, Users, Contributions) {
         $scope.contributions = contributions.data;
 
