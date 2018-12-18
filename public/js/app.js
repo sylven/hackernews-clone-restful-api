@@ -349,7 +349,14 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             $scope.contributions = doc;
         }, function(response){
             console.log(response);
-        })
+        });
+        Users.getUser($scope.userId).then(function(doc) {
+            $scope.userPoints = doc.points;
+        }, function(response) {
+            //alert(response);
+            //$("#error_messages").html("Error: "+response.data.error).show();
+            console.log(response);
+        });
     })
     .controller("UserController", function($scope, $cookies, $routeParams, $location, Users){
         let token = $cookies.get('access_token');
@@ -391,6 +398,13 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             if (!$scope.editMode) $scope.editMode = true;
             else $scope.editMode = !$scope.editMode;
         }
+        Users.getUser($scope.userId).then(function(doc) {
+            $scope.userPoints = doc.points;
+        }, function(response) {
+            //alert(response);
+            //$("#error_messages").html("Error: "+response.data.error).show();
+            console.log(response);
+        });
     })
     .controller("ListController", function($scope, $cookies, $location, contributions, Users, Contributions) {
         $scope.contributions = contributions.data;
