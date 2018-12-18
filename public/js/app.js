@@ -486,7 +486,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             console.log(contribution);
             if (!contribution || !contribution.title || (!contribution.text && !contribution.url)) {
                 $("#error_messages").html("Please insert data").show();
-            } else if (!/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(contribution.url)) {
+            } else if (!contribution.text && !/^(http[s]?:\/\/){0,1}(www\.){0,1}[a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,5}[\.]{0,1}/.test(contribution.url)) {
                 $("#error_messages").html("Please insert a valid url").show();
             } else if (contribution.title && contribution.text && contribution.url) {
                 $("#error_messages").html("You can only send a text or url").show();
