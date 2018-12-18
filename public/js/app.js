@@ -352,6 +352,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
         });
         Users.getUser($scope.userId).then(function(doc) {
             $scope.userPoints = doc.points;
+            $scope.authorDisplayName = doc.displayName;
         }, function(response) {
             //alert(response);
             //$("#error_messages").html("Error: "+response.data.error).show();
