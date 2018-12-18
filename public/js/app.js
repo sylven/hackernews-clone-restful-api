@@ -28,15 +28,10 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     }
                 }
             })
-            .when("/threads", {
+            /*.when("/threads", {
                 templateUrl: "threads.html",
                 controller: "ThreadsController",
-                /*resolve: {
-                    comments: function(Users) {
-                        return Users.getThreads();
-                    }
-                }*/
-            })
+            })*/
             .when("/submit", {
                 controller: "NewContributionController",
                 templateUrl: "submit.html"
@@ -54,8 +49,8 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 templateUrl: "user_contributions.html"
             })
             .when("/user/:userId/threads", {
-                controller: "UserThreadsController",
-                templateUrl: "user_threads.html"
+                controller: "ThreadsController",
+                templateUrl: "threads.html"
             })
             .otherwise({
                 redirectTo: "/"
@@ -564,7 +559,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             console.log(response);
         });
     })
-    .controller("ThreadsController", function($scope, $cookies, $location, Contributions, Users) {
+    .controller("ThreadsController", function($scope, $cookies, $location, Contributions, Users, $routeParams) {
         //$scope.contributions = comments.data;
 
         $scope.authToken = $cookies.get('access_token');
@@ -592,7 +587,14 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
             //$("#error_messages").html("Error: "+response.data.error).show();
             console.log(response);
         });
-        Users.getThreads($scope.userId).then(function(doc) {
+        Users.getUser($routeParams.userId).then(function(doc) {
+            $scope.visitedUserDisplayName = doc.displayName;
+        }, function(response) {
+            //alert(response);
+            //$("#error_messages").html("Error: "+response.data.error).show();
+            console.log(response);
+        });
+        Users.getThreads($routeParams.userId).then(function(doc) {
             console.log(doc);
             $scope.contributions = doc;
         }, function(response) {
