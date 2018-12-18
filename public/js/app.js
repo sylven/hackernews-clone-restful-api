@@ -61,7 +61,7 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 redirectTo: "/"
             })
     })
-    .service("Contributions", function($http, $location, $window) {
+    .service("Contributions", function($http, $location, $window, $cookies) {
         this.getContributions = function() {
             return $http.get("/api/contributions").
                 then(function(response) {
@@ -110,6 +110,11 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                         console.log(response.data.redirectUrl);
                         $window.location.href = response.data.redirectUrl;
                         //$location.path(response.data.redirectUrl);
+                    } else if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
                     }
                     else {
                         //$("#error_messages").html("Error: "+response.data.error).show();
@@ -154,6 +159,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     console.log(response);
                     //return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
@@ -167,6 +178,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
@@ -192,13 +209,19 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
     })
-    .service("Comments", function ($http) {
+    .service("Comments", function ($http, $cookies) {
         this.post = function(token, commentId, newComment) {
             var url = "/api/comments/" + commentId + "/comments";
             newComment.access_token = token;
@@ -206,6 +229,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
@@ -219,6 +248,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
@@ -233,13 +268,19 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                     console.log(response);
                     return response;
                 }, function(response) {
+                    if (response.status == 401) {
+                        $cookies.remove('access_token');
+                        $cookies.remove('user_display_name');
+                        $cookies.remove('user_image');
+                        $cookies.remove('user_id');
+                    }
                     //alert("Error deleting this contribution.");
                     //$("#error_messages").html("Error: "+response.data.error).show();
                     console.log(response);
                 });
         }
     })
-    .service("Users", function ($http) {
+    .service("Users", function ($http, $cookies) {
         this.getLoginUrl = function() {
             return $http.get("/api/users/login-url").
                 then(function(response) {
@@ -255,6 +296,12 @@ angular.module("contributionsApp", ['ngRoute', 'ngCookies'])
                 then(function(response) {
                     return response.data;
             }, function (response) {
+                if (response.status == 404) {
+                    $cookies.remove('access_token');
+                    $cookies.remove('user_display_name');
+                    $cookies.remove('user_image');
+                    $cookies.remove('user_id');
+                }
                 //alert("Error getting login url");
                 //$("#error_messages").html("Error: "+response.data.error).show();
                 console.log(response);
