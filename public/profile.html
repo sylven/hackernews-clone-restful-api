@@ -23,8 +23,8 @@
                 <button class="btn btn-default" ng-click="toggleEdit()">cancel</button>
             </div>
         </div>
-        <button ng-hide="editMode" style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/contributions"> View Users' Contributions</button><br>
-        <button ng-hide="editMode" style="margin-top:20px" class="btn btn-default" href="#/user/{{userId}}/threads"> View Users' Comments</button>
+        <a href="#/user/{{userId}}/contributions"><button ng-hide="editMode" style="margin-top:20px" class="btn btn-default"> View Users' Contributions</button></a><br>
+        <a href="#/user/{{userId}}/threads"><button ng-hide="editMode" style="margin-top:20px" class="btn btn-default"> View Users' Comments</button></a>
     </div>
     </div>
 </div>
